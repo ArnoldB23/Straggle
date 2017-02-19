@@ -26,7 +26,7 @@ public class ImageTexture {
     private static final int TEXTURE_COORDINATES_COMPONENT_COUNT = 2;
     private static final int STRIDE = (POSITION_COMPONENT_COUNT + TEXTURE_COORDINATES_COMPONENT_COUNT) * VertexArray.BYTES_PER_FLOAT;
     public int mTextureId;
-    public float [] mModelMatrix = new float[16];
+    private float [] mModelMatrix = new float[16];
     public float [] cameraTranslateMatrix = new float[16];
     public float mCameraRotationAngle;
     public Float[] mTranslationValuesXYZ = new Float [3];
@@ -101,7 +101,7 @@ public class ImageTexture {
 
     public void moveFromToCamera(float distance)
     {
-        mTranslationValuesXYZ[1] = distance;
+        mTranslationValuesXYZ[2] = distance;
     }
 
     public void rotateAroundCamera(float angle)

@@ -9,6 +9,7 @@ import android.opengl.GLSurfaceView;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -106,8 +107,25 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        mImageTexture = new ImageTexture(R.drawable.frame1_1, mContext);
         mTextureShaderProgram = new TextureShaderProgram(mContext);
+
+        //mImageTexture = new ImageTexture(R.drawable.frame1_1, mContext);
+        mImageTextures.add(new ImageTexture(R.drawable.frame1_1, mContext));
+        mImageTextures.add(new ImageTexture(R.drawable.frame2_3, mContext));
+        mImageTextures.add(new ImageTexture(R.drawable.frame3_4, mContext));
+        mImageTextures.add(new ImageTexture(R.drawable.frame3_5, mContext));
+        mImageTextures.add(new ImageTexture(R.drawable.frame4_5, mContext));
+        mImageTextures.add(new ImageTexture(R.drawable.frame9_16, mContext));
+
+        float rotate = 0f;
+        for(ImageTexture it : mImageTextures) {
+
+            it.mCameraRotationAngle = (rotate * 60 + it.mCameraRotationAngle) - 180;
+            rotate++;
+
+            Random r = new Random();
+            it.moveFromToCamera(-r.nextFloat()*10 + it.mTranslationValuesXYZ[2]);
+        }
 
 
         Log.d(LOG_TAG, "onSurfaceCreated end");
@@ -149,7 +167,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         // Multiply the view and projection matrices together.
         multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
-
+        /*
         setIdentityM(modelMatrix, 0);
         rotateM(modelMatrix, 0, modelValues[4], 0, 1, 0); //rotate around camera
         multiplyMM(modelMatrix, 0,  modelMatrix, 0, cameraTranslateMatrix, 0);//translate camera z position
@@ -157,25 +175,28 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
         rotateM(modelMatrix, 0, modelValues[3], 1, 0, 0);   //rotate around own x axis
         rotateM(modelMatrix, 0, modelValues[5], 0, 0, 1);   //rotate around own z axis
+        */
+
+        float rotate = 0f;
+        for(ImageTexture it : mImageTextures)
+        {
+
+            float [] modelMatrix = it.calculateModelMatrix();
+            multiplyMM(modelViewProjectionMatrix, 0,  viewProjectionMatrix, 0, modelMatrix, 0);
+            mTextureShaderProgram.useProgram();
+            mTextureShaderProgram.setUniforms(modelViewProjectionMatrix, it.mTextureId, it.opacity);//every object sets its own mvpMatrix, texture, and alpha values
+            it.bindData(mTextureShaderProgram);
+            it.draw();
+        }
 
 
         /*
-        for(ImageTexture it : mImageTextures)
-        {
-            float [] modelMatrix = it.
-            multiplyMM(modelViewProjectionMatrix, 0,  viewProjectionMatrix, 0, modelMatrix, 0)
-        }
-        */
-
-
         multiplyMM(modelViewProjectionMatrix, 0,  viewProjectionMatrix, 0, modelMatrix, 0);
-
-
         mTextureShaderProgram.useProgram();
         mTextureShaderProgram.setUniforms(modelViewProjectionMatrix, mImageTexture.mTextureId, viewValues[0]);//every object sets its own mvpMatrix, texture, and alpha values
         mImageTexture.bindData(mTextureShaderProgram);
         mImageTexture.draw();
-
+        */
 
 
     }
