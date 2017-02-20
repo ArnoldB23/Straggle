@@ -94,7 +94,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         setIdentityM(modelSensorMatrix, 0);
         rotateM(modelSensorMatrix, 0, 90, 1, 0, 0);
 
-        mImageTextures = new ArrayList<ImageTexture>();
+        mImageTextures = new ArrayList<>();
     }
 
     @Override
@@ -124,7 +124,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             rotate++;
 
             Random r = new Random();
-            it.moveFromToCamera(-r.nextFloat()*10 + it.mTranslationValuesXYZ[2]);
+            it.moveFromToCamera(-r.nextFloat()*2 + it.mTranslationValuesXYZ[2]);
         }
 
 
@@ -139,9 +139,6 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         glViewport(0, 0, width, height);
 
         perspectiveM(projectionMatrix, 0, 65, (float) width/height, 0f, 1000f);
-
-        positionObjectInScene(new Float [] {0f, -1.9f, -2f, 0f, 155f, 0f});
-        positionViewCameraInScene(new Float[]{ 0.8f, 1.2f, 2.2f, 0f, 0f, -2f, 0f, 1f, 0f});
 
 
         setIdentityM(cameraTranslateMatrix, 0);
@@ -167,64 +164,17 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         // Multiply the view and projection matrices together.
         multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
-        /*
-        setIdentityM(modelMatrix, 0);
-        rotateM(modelMatrix, 0, modelValues[4], 0, 1, 0); //rotate around camera
-        multiplyMM(modelMatrix, 0,  modelMatrix, 0, cameraTranslateMatrix, 0);//translate camera z position
-        translateM(modelMatrix, 0, modelValues[0], modelValues[1], modelValues[2]);//translate object with respect to own axis
+        for(ImageTexture it : mImageTextures) {
 
-        rotateM(modelMatrix, 0, modelValues[3], 1, 0, 0);   //rotate around own x axis
-        rotateM(modelMatrix, 0, modelValues[5], 0, 0, 1);   //rotate around own z axis
-        */
-
-        float rotate = 0f;
-        for(ImageTexture it : mImageTextures)
-        {
-
-            float [] modelMatrix = it.calculateModelMatrix();
-            multiplyMM(modelViewProjectionMatrix, 0,  viewProjectionMatrix, 0, modelMatrix, 0);
+            float[] modelMatrix = it.calculateModelMatrix();
+            multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
             mTextureShaderProgram.useProgram();
             mTextureShaderProgram.setUniforms(modelViewProjectionMatrix, it.mTextureId, it.opacity);//every object sets its own mvpMatrix, texture, and alpha values
             it.bindData(mTextureShaderProgram);
             it.draw();
         }
-
-
-        /*
-        multiplyMM(modelViewProjectionMatrix, 0,  viewProjectionMatrix, 0, modelMatrix, 0);
-        mTextureShaderProgram.useProgram();
-        mTextureShaderProgram.setUniforms(modelViewProjectionMatrix, mImageTexture.mTextureId, viewValues[0]);//every object sets its own mvpMatrix, texture, and alpha values
-        mImageTexture.bindData(mTextureShaderProgram);
-        mImageTexture.draw();
-        */
-
-
     }
 
-    //Order of values: x,y,z,xr,yr,zr
-    public void positionObjectInScene(Float [] values) {
-
-        for(int i = 0; i < modelValues.length; i++)
-        {
-            if (values[i] != null)
-            {
-                modelValues[i] = values[i];
-            }
-        }
-    }
-
-    //Order of values: xe,ye,ze,xt,yt,zt,xu,yu,zu
-    public void positionViewCameraInScene(Float [] values) {
-
-        for(int i = 0; i < viewValues.length; i++)
-        {
-            if (values[i] != null)
-            {
-                viewValues[i] = values[i];
-            }
-        }
-
-    }
 
     public void stopReadingSensor()
     {
