@@ -30,13 +30,28 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mHolder.addCallback(this);
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
+
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
+            Camera.Parameters cp = mCamera.getParameters();
+            cp.setFlashMode(Camera.Parameters.FLASH_MODE_OFF);
+            //cp.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+            mCamera.setParameters(cp);
+
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
+
+
+            mCamera.autoFocus(new Camera.AutoFocusCallback() {
+                @Override
+                public void onAutoFocus(boolean b, Camera camera) {
+
+                }
+            });
         } catch (IOException e) {
             Log.d(TAG, "Error setting camera preview: " + e.getMessage());
         }
@@ -58,6 +73,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // stop preview before making changes
         try {
+            mCamera.cancelAutoFocus();
             mCamera.stopPreview();
         } catch (Exception e){
             // ignore: tried to stop a non-existent preview

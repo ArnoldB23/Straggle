@@ -1,12 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent"
-             android:background="@drawable/background_mica"
-             android:id="@+id/camera_preview">
-
-    <android.opengl.GLSurfaceView
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              xmlns:app="http://schemas.android.com/apk/res-auto"
+              android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/gl_surfaceview"/>
-</FrameLayout>
+        android:orientation="vertical"
+        android:keepScreenOn="true">
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.9"
+        android:background="@drawable/background_mica"
+        android:id="@+id/camera_preview">
+
+        <android.opengl.GLSurfaceView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:id="@+id/gl_surfaceview"/>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:srcCompat="@drawable/full_moon_48"
+            android:layout_gravity="center_horizontal|bottom"
+            android:layout_marginBottom="8dp"
+            android:background="?android:selectableItemBackground"
+            android:id="@+id/take_picture_button"/>
+
+
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.1"
+        android:id="@+id/debug_textview"/>
+</LinearLayout>
+
+

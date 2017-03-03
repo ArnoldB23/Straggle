@@ -5,11 +5,13 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.location.Location;
 import android.opengl.GLSurfaceView;
+import android.os.Environment;
 import android.util.Log;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Random;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -55,7 +57,9 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
     public float[] orientation = new float[3];
 
-    public ImageTexture mImageTexture;
+    public float mHorizontalViewAngle;
+    public Location mCameraLocation;
+
     private TextureShaderProgram mTextureShaderProgram;
     public ArrayList<ImageTexture> mImageTextures;
 
@@ -67,9 +71,11 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     private GLSurfaceView mGLSurfaceView;
 
 
+
     public interface OrientationCallback
     {
         void onOrientationChange(float [] orientation);
+        void onDebugString(String str);
     }
 
     public void setOnOrientationCallback(OrientationCallback callback)
@@ -88,7 +94,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
         if (mRotationVectorSensor == null)
         {
-            Log.d("CameraRenderer", "mRotationVectorSensor is null");
+            Log.d("CameraRenderer", "mAccelerometer is null");
         }
 
         setIdentityM(modelSensorMatrix, 0);
@@ -109,14 +115,52 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
         mTextureShaderProgram = new TextureShaderProgram(mContext);
 
-        //mImageTexture = new ImageTexture(R.drawable.frame1_1, mContext);
-        mImageTextures.add(new ImageTexture(R.drawable.frame1_1, mContext));
-        mImageTextures.add(new ImageTexture(R.drawable.frame2_3, mContext));
-        mImageTextures.add(new ImageTexture(R.drawable.frame3_4, mContext));
-        mImageTextures.add(new ImageTexture(R.drawable.frame3_5, mContext));
-        mImageTextures.add(new ImageTexture(R.drawable.frame4_5, mContext));
-        mImageTextures.add(new ImageTexture(R.drawable.frame9_16, mContext));
+        /*
+        Location location = new Location(LocationManager.GPS_PROVIDER);
 
+        //Garage
+        setCoordinates(location, 37.390980, -121.877402);
+
+        //mImageTexture = new ImageTexture(R.drawable.frame1_1, mContext);
+        mImageTextures.add(new ImageTexture(R.drawable.measure, location, mContext));
+        */
+
+        File directory = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "Straggle");
+        File[] files = directory.listFiles();
+
+        if(files != null)
+        {
+            Log.d("Files", "Size: "+ files.length);
+            for (int i = 0; i < files.length; i++)
+            {
+                Log.d("Files", "FileName: " + files[i].getName());
+                //mImageTextures.add(new ImageTexture(files[i].getAbsolutePath(), TextureHelper.getImageTextureLocation(mContext,files[i].getAbsolutePath()),mContext ));
+
+            }
+        }
+
+
+        /*
+        //Parent's bedroom
+        location = new Location(LocationManager.GPS_PROVIDER);
+        setCoordinates(location, 37.390817, -121.877254);
+        mImageTextures.add(new ImageTexture(R.drawable.frame2_3, location, mContext));
+
+        //Kitchen
+        location = new Location(LocationManager.GPS_PROVIDER);
+        setCoordinates(location, 37.390880, -121.8771781);
+        mImageTextures.add(new ImageTexture(R.drawable.frame3_4, location, mContext));
+
+
+        //My room
+        location = new Location(LocationManager.GPS_PROVIDER);
+        setCoordinates(location, 37.390839, -121.877212);
+        mImageTextures.add(new ImageTexture(R.drawable.frame3_5, location, mContext));
+        //mImageTextures.add(new ImageTexture(R.drawable.frame4_5, mContext));
+        //mImageTextures.add(new ImageTexture(R.drawable.frame9_16, mContext));
+        */
+        /*
         float rotate = 0f;
         for(ImageTexture it : mImageTextures) {
 
@@ -124,8 +168,9 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             rotate++;
 
             Random r = new Random();
-            it.moveFromToCamera(-r.nextFloat()*2 + it.mTranslationValuesXYZ[2]);
+            it.moveFromToCamera(-r.nextFloat()*6 + it.mTranslationValuesXYZ[2]);
         }
+        */
 
 
         Log.d(LOG_TAG, "onSurfaceCreated end");
@@ -138,8 +183,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         // Set the OpenGL viewport to fill the entire surface.
         glViewport(0, 0, width, height);
 
-        perspectiveM(projectionMatrix, 0, 65, (float) width/height, 0f, 1000f);
-
+        perspectiveM(projectionMatrix, 0, 40.3f, (float) width/height, 0f, 10000f);
 
         setIdentityM(cameraTranslateMatrix, 0);
         translateM(cameraTranslateMatrix, 0, 0, 0, -2);
@@ -150,9 +194,15 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     @Override
     public void onDrawFrame(GL10 gl10) {
 
+        //Log.d(LOG_TAG, "onDrawFrame");
+
         // Clear the rendering surface.
         glClear(GL_COLOR_BUFFER_BIT);
 
+        if(mCameraLocation == null)
+        {
+            return;
+        }
 
         /*
         setLookAtM(viewMatrix, 0, viewValues[0], viewValues[1], viewValues[2]
@@ -164,7 +214,35 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         // Multiply the view and projection matrices together.
         multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
+
+
         for(ImageTexture it : mImageTextures) {
+
+            //double distance = 3;
+            //double ItAngle = 301.5f;
+
+            if (it == null)
+            {
+                return;
+            }
+
+            double distance = mCameraLocation.distanceTo(it.mLocation);
+            double ItAngle = mCameraLocation.bearingTo(it.mLocation);
+
+
+            String debugStr = "Camera: " +  String.format("%5.7f",mCameraLocation.getLatitude()) + ", " + String.format("%5.7f",mCameraLocation.getLongitude())
+                    + "\nAccuracy: " + String.format("%5.7f",mCameraLocation.getAccuracy()) + ", Z: " +  String.format("%3.1f",orientation[0]);
+                    //+ "\nImage: " + String.format("%5.7f",it.mLocation.getLatitude()) + ", " + String.format("%5.7f",it.mLocation.getLongitude())
+                    //+ "\nDistance: " + String.format("%5.5f", distance) + ", ItAngle: " + String.format("%3.7f", ItAngle);
+            if (mOrientationCallback != null)
+            {
+                mOrientationCallback.onDebugString(debugStr);
+            }
+
+            it.rotateAroundCamera((float) -ItAngle);
+
+
+            it.moveFromToCamera((float)-distance * 0.79f);
 
             float[] modelMatrix = it.calculateModelMatrix();
             multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
@@ -173,6 +251,33 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             it.bindData(mTextureShaderProgram);
             it.draw();
         }
+    }
+
+    public double calculateBearing(Location loc1, Location loc2)
+    {
+        //ATAN2(COS(lat1)*SIN(lat2)-SIN(lat1)*COS(lat2)*COS(lon2-lon1), SIN(lon2-lon1)*COS(lat2))
+        //y = Math.sin(λ2-λ1) * Math.cos(φ2);\
+        //x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
+        //brng = Math.atan2(y, x).toDegrees();
+        double loc1Lon = Math.toRadians(loc1.getLongitude());
+        double loc1Lat = Math.toRadians(loc1.getLatitude());
+
+        double loc2Lon = Math.toRadians(loc2.getLongitude());
+        double loc2Lat = Math.toRadians(loc2.getLatitude());
+        double deltaLat = loc2Lat - loc1Lat;
+
+        double y = Math.sin(deltaLat) * Math.cos(loc2Lon);
+        double x = Math.cos(loc1Lon) * Math.sin(loc2Lon) - Math.sin(loc1Lon)*Math.cos(loc2Lon)*Math.cos(deltaLat);
+
+        return (Math.toDegrees(Math.atan2(y,x))+360)%360;
+
+
+    }
+
+    public void setCoordinates(Location loc, double lat, double lon)
+    {
+        loc.setLatitude(lat);
+        loc.setLongitude(lon);
     }
 
 
@@ -196,11 +301,17 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
             SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
 
+            float [] rotateOrientation = new float[3];
 
-            //SensorManager.getOrientation(rotationMatrix,orientation);
-            //orientation[0] = (float)Math.toDegrees(orientation[0]);//azimuth z
-            //orientation[1] = (float)Math.toDegrees(orientation[1]);//pitch x
-            //orientation[2] = (float)Math.toDegrees(orientation[2]);//roll y
+            SensorManager.getOrientation(rotationMatrix,rotateOrientation);
+            /*
+            orientation[0] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[0]));//pitch x
+            orientation[1] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[1]));//roll y
+            orientation[2] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[2]));//azimuth z
+            */
+            orientation[0] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[0]));//pitch x
+            orientation[1] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[1]));//roll y
+            orientation[2] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[2]));//azimuth z
 
             if (mOrientationCallback != null)
             {

@@ -5,10 +5,22 @@ package roca.bajet.com.straggle.util;
  */
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
+import android.location.LocationManager;
+import android.net.Uri;
+import android.os.Environment;
+import android.preference.PreferenceManager;
 import android.util.Log;
+
+import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
 
 import static android.opengl.GLES20.GL_LINEAR;
 import static android.opengl.GLES20.GL_LINEAR_MIPMAP_LINEAR;
@@ -19,7 +31,9 @@ import static android.opengl.GLES20.glBindTexture;
 import static android.opengl.GLES20.glDeleteTextures;
 import static android.opengl.GLES20.glGenTextures;
 import static android.opengl.GLES20.glGenerateMipmap;
+import static android.opengl.GLES20.glGetError;
 import static android.opengl.GLES20.glTexParameteri;
+import static android.opengl.GLUtils.getEGLErrorString;
 import static android.opengl.GLUtils.texImage2D;
 
 public class TextureHelper {
@@ -33,6 +47,13 @@ public class TextureHelper {
     public static final int ARATIO_5X7 = 57;
     public static final int ARATIO_9X16 = 916;
 
+    public static final int ARATIO_3X2 = 32;
+    public static final int ARATIO_5X3 = 53;
+    public static final int ARATIO_4X3 = 43;
+    public static final int ARATIO_5X4 = 54;
+    public static final int ARATIO_7X5 = 75;
+    public static final int ARATIO_16X9 = 169;
+    private static final String IMAGETEXTURE_LOC = "IMAGETEXTURE_LOC";
 
 
     public static int getBestAspectRatio(BitmapFactory.Options options)
@@ -86,6 +107,44 @@ public class TextureHelper {
             bestFitAspectRatio = ARATIO_9X16;
         }
 
+
+        //landscape ratios
+        if (Math.abs(aspectRatio - 3/2f) < bestFitError)
+        {
+            bestFitError = Math.abs(aspectRatio - 3/2f);
+            bestFitAspectRatio = ARATIO_3X2;
+        }
+
+        if (Math.abs(aspectRatio - 5/3f) < bestFitError)
+        {
+            bestFitError = Math.abs(aspectRatio - 5/3f);
+            bestFitAspectRatio = ARATIO_5X3;
+        }
+
+        if (Math.abs(aspectRatio - 4/3f) < bestFitError)
+        {
+            bestFitError = Math.abs(aspectRatio - 4/3f);
+            bestFitAspectRatio = ARATIO_4X3;
+        }
+
+        if (Math.abs(aspectRatio - 5/4f) < bestFitError)
+        {
+            bestFitError = Math.abs(aspectRatio - 5/4f);
+            bestFitAspectRatio = ARATIO_5X4;
+        }
+
+        if (Math.abs(aspectRatio - 7/5f) < bestFitError)
+        {
+            bestFitError = Math.abs(aspectRatio - 7/5f);
+            bestFitAspectRatio = ARATIO_7X5;
+        }
+
+        if (Math.abs(aspectRatio - 16/9f) < bestFitError)
+        {
+            bestFitError = Math.abs(aspectRatio - 16/9f);
+            bestFitAspectRatio = ARATIO_16X9;
+        }
+
         return bestFitAspectRatio;
     }
 
@@ -127,6 +186,38 @@ public class TextureHelper {
         return BitmapFactory.decodeResource(res, resId, options);
     }
 
+    public static Bitmap decodeSampledBitmapFromFile(String fileStr,
+                                                         int reqWidth, int reqHeight) {
+
+        // First decode with inJustDecodeBounds=true to check dimensions
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(fileStr, options);
+
+        // Calculate inSampleSize
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeFile(fileStr, options);
+    }
+
+    public static Bitmap decodeSampledBitmapFromBytes(byte [] data,
+                                                     int reqWidth, int reqHeight) {
+
+        // First decode with inJustDecodeBounds=true to check dimensions
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+
+        // Calculate inSampleSize
+        options.inSampleSize = calculateInSampleSize(options, reqWidth, reqHeight);
+
+        // Decode bitmap with inSampleSize set
+        options.inJustDecodeBounds = false;
+        return BitmapFactory.decodeByteArray(data, 0, data.length, options);
+    }
+
 
     public static Bitmap scaleBitmap(int resId, Context context)
     {
@@ -134,8 +225,6 @@ public class TextureHelper {
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeResource(context.getResources(), resId, options);
         int aspect_ratio = getBestAspectRatio(options);
-
-
 
 
         switch(aspect_ratio)
@@ -247,6 +336,78 @@ public class TextureHelper {
 
                 };
 
+            case ARATIO_3X2:
+                return new float [] {
+                        // Order of coordinates: X, Y, S, T
+                        0f,    0f,      0.5f, 0.5f,
+                        -1.5f, -1f,   0f, 1f,
+                        1.5f, -1f,    1f, 1f,
+                        1.5f,  1f,    1f, 0f,
+                        -1.5f,  1f,   0f, 0f,
+                        -1.5f, -1f,    0f, 1f
+
+                };
+
+            case ARATIO_5X3:
+                return new float [] {
+                        // Order of coordinates: X, Y, S, T
+                        0f,    0f,      0.5f, 0.5f,
+                        -2.5f, -1.5f,   0f, 1f,
+                        2.5f, -1.5f,    1f, 1f,
+                        2.5f,  1.5f,    1f, 0f,
+                        -2.5f,  1.5f,   0f, 0f,
+                        -2.5f, -1.5f,    0f, 1f
+
+                };
+
+            case ARATIO_4X3:
+                return new float [] {
+                        // Order of coordinates: X, Y, S, T
+                        0f,    0f,      0.5f, 0.5f,
+                        -2f, -1.5f,   0f, 1f,
+                        2f, -1.5f,    1f, 1f,
+                        2f,  1.5f,    1f, 0f,
+                        -2f,  1.5f,   0f, 0f,
+                        -2f, -1.5f,    0f, 1f
+
+                };
+
+            case ARATIO_5X4:
+                return new float [] {
+                        // Order of coordinates: X, Y, S, T
+                        0f,    0f,      0.5f, 0.5f,
+                        -2.5f, -2f,   0f, 1f,
+                        2.5f, -2f,    1f, 1f,
+                        2.5f,  2f,    1f, 0f,
+                        -2.5f,  2f,   0f, 0f,
+                        -2.5f, -2f,    0f, 1f
+
+                };
+
+            case ARATIO_7X5:
+                return new float [] {
+                        // Order of coordinates: X, Y, S, T
+                        0f,    0f,      0.5f, 0.5f,
+                        -3.5f, -2.5f,   0f, 1f,
+                        3.5f, -2.5f,    1f, 1f,
+                        3.5f,  2.5f,    1f, 0f,
+                        -3.5f,  2.5f,   0f, 0f,
+                        -3.5f, -2.5f,    0f, 1f
+
+                };
+
+            case ARATIO_16X9:
+                return new float [] {
+                        // Order of coordinates: X, Y, S, T
+                        0f,    0f,      0.5f, 0.5f,
+                        -2f, -1.125f,   0f, 1f,
+                        2f, -1.125f,    1f, 1f,
+                        2f,  1.125f,    1f, 0f,
+                        -2f,  1.125f,   0f, 0f,
+                        -2f, -1.125f,    0f, 1f
+
+                };
+
         }
 
         return null;
@@ -330,7 +491,7 @@ public class TextureHelper {
 
         if (textureObjectIds[0] == 0) {
 
-            Log.w(TAG, "Could not generate a new OpenGL texture object.");
+            Log.w(TAG, "Could not generate a new OpenGL texture object. Error: " + getEGLErrorString(glGetError()));
 
 
             return 0;
@@ -378,5 +539,95 @@ public class TextureHelper {
         glBindTexture(GL_TEXTURE_2D, 0);
 
         return textureObjectIds[0];
+    }
+
+    public static final int MEDIA_TYPE_IMAGE = 1;
+    public static final int MEDIA_TYPE_VIDEO = 2;
+
+    /** Create a file Uri for saving an image or video */
+    public static Uri getOutputMediaFileUri(int type){
+        return Uri.fromFile(getOutputMediaFile(type));
+    }
+
+    /** Create a File for saving an image or video */
+    public static File getOutputMediaFile(int type){
+        // To be safe, you should check that the SDCard is mounted
+        // using Environment.getExternalStorageState() before doing this.
+
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES), "Straggle");
+        // This location works best if you want the created images to be shared
+        // between applications and persist after your app has been uninstalled.
+
+        // Create the storage directory if it does not exist
+        if (! mediaStorageDir.exists()){
+            if (! mediaStorageDir.mkdirs()){
+                Log.d("MyCameraApp", "failed to create directory");
+                return null;
+            }
+        }
+
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        File mediaFile;
+        if (type == MEDIA_TYPE_IMAGE){
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "IMG_"+ timeStamp + ".jpg");
+        } else if(type == MEDIA_TYPE_VIDEO) {
+            mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                    "VID_"+ timeStamp + ".mp4");
+        } else {
+            return null;
+        }
+
+        return mediaFile;
+    }
+
+    public static void setImageTextureLocation (Context c, String fileStr, Location loc)
+    {
+
+        HashSet<String> hashSet = new HashSet<>(2);
+        hashSet.add(String.valueOf(loc.getLatitude()));
+        hashSet.add(String.valueOf(loc.getLongitude()));
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        prefs.edit().putStringSet(fileStr, hashSet).apply();
+    }
+
+    public static Location getImageTextureLocation (Context c, String fileStr)
+    {
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
+        HashSet<String> dataSet =(HashSet<String>) prefs.getStringSet(fileStr, null);
+
+        Location loc = new Location(LocationManager.GPS_PROVIDER);
+
+
+        Iterator itr = dataSet.iterator();
+        while(itr.hasNext())
+        {
+            loc.setLatitude(Double.valueOf((String)itr.next()));
+            loc.setLongitude(Double.valueOf((String)itr.next()));
+        }
+
+        return loc;
+    }
+
+
+
+    public static boolean deleteDirectory(File path) {
+
+        if( path.exists() ) {
+            File[] files = path.listFiles();
+            for(int i=0; i<files.length; i++) {
+                if(files[i].isDirectory()) {
+                    deleteDirectory(files[i]);
+                }
+                else {
+                    files[i].delete();
+                }
+            }
+        }
+        return(path.delete());
     }
 }

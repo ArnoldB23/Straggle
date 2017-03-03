@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.util.DisplayMetrics;
 import android.util.Log;
 
@@ -32,12 +33,13 @@ public class ImageTexture {
     public Float[] mTranslationValuesXYZ = new Float [3];
     public Float[] mRotationValuesXYZ = new Float [3];
     public float opacity;
+    public Location mLocation;
 
     private static float[] VERTEX_DATA;
     private VertexArray vertexArray;
 
 
-    public ImageTexture(int resId, Context c) {
+    public ImageTexture(int resId, Location location, Context c) {
 
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
@@ -54,11 +56,40 @@ public class ImageTexture {
         Bitmap bitmap = TextureHelper.decodeSampledBitmapFromResource(c.getResources(), resId, displaymetrics.widthPixels, displaymetrics.heightPixels);
         mTextureId = TextureHelper.loadTexture(c, bitmap);
 
-        mTranslationValuesXYZ = new Float [] {0f, -1.9f, -2f};
+        //mTranslationValuesXYZ = new Float [] {0f, -1.9f, -2f};
+        mTranslationValuesXYZ = new Float [] {0f, 0f, -2f};
         mRotationValuesXYZ = new Float [] {0f, 0f, 0f};
         mCameraRotationAngle = 155f;
         opacity = 0.8f;
+        mLocation = location;
 
+        setIdentityM(cameraTranslateMatrix, 0);
+        translateM(cameraTranslateMatrix, 0, 0, 0, -2);
+    }
+
+    public ImageTexture(String filestr, Location location, Context c) {
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile( filestr, options);
+        int aratioNum = TextureHelper.getBestAspectRatio(options);
+        Log.d("ImageTexture", "Aspect ratio num : " + aratioNum);
+
+        VERTEX_DATA = TextureHelper.getTextureVertexSet(aratioNum);
+        vertexArray = new VertexArray(VERTEX_DATA);
+
+        DisplayMetrics displaymetrics = new DisplayMetrics();
+        ((Activity) c).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+
+        Bitmap bitmap = TextureHelper.decodeSampledBitmapFromFile(filestr, displaymetrics.widthPixels, displaymetrics.heightPixels);
+        mTextureId = TextureHelper.loadTexture(c, bitmap);
+
+        //mTranslationValuesXYZ = new Float [] {0f, -1.9f, -2f};
+        mTranslationValuesXYZ = new Float [] {0f, 0f, -2f};
+        mRotationValuesXYZ = new Float [] {0f, 0f, 0f};
+        mCameraRotationAngle = 155f;
+        opacity = 0.8f;
+        mLocation = location;
 
         setIdentityM(cameraTranslateMatrix, 0);
         translateM(cameraTranslateMatrix, 0, 0, 0, -2);
