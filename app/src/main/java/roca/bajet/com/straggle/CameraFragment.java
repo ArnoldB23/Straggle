@@ -81,6 +81,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     public Location mCurrentLocation;
     public Handler mHandler;
     public float [] mOrientation;
+    public float mCameraAzimuth;
     public int mOrientationDeg = 0;
 
     
@@ -123,13 +124,14 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         mCameraRenderer.setOnOrientationCallback(new CameraRenderer.OrientationCallback() {
              @Override
              public void onOrientationChange(float[] orientation) {
-                 mOrientation = orientation;
+                 //mCameraAzimuth = orientation;
 
-                 String x = String.format("%+3.2f", orientation[0]);
-                 String y = String.format("%+3.2f", orientation[1]);
-                 String z = String.format("%+3.2f", orientation[2]);
+                 String x = String.format("%+3.2f", orientation[1]);
+                 String y = String.format("%+3.2f", orientation[2]);
+                 String z = String.format("%+3.2f", orientation[3]);
+                 String w = String.format("%+3.2f", orientation[0]);
 
-                 String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z;
+                 String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z + ", W = " +  w;;
                  //mDebugTextView.setText(txt);
              }
              @Override
@@ -146,7 +148,13 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                      }
                  });
              }
-            }
+
+             @Override
+             public void onAzimuthOrientationChange(double orientation) {
+                 mCameraAzimuth = (float)orientation;
+                 mDebugTextView.setText("azimuth: " + orientation);
+             }
+         }
         );
 
 
@@ -217,7 +225,10 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                                 mGLSurfaceView.queueEvent(new Runnable() {
                                     @Override
                                     public void run() {
-                                       mCameraRenderer.mImageTextures.add(new ImageTexture(pictureFile.getAbsolutePath(), mCurrentLocation, mContext));
+                                        ImageTexture im = new ImageTexture(pictureFile.getAbsolutePath(), mCurrentLocation, mContext);
+                                        //im.rotateAroundCamera(-mCameraAzimuth[2]+180);
+                                        im.rotateAroundCamera(-mCameraAzimuth);
+                                       mCameraRenderer.mImageTextures.add(im);
                                     }
                                 });
 
@@ -474,13 +485,20 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                 currentBestLocation.getProvider());
 
         // Determine location quality using a combination of timeliness and accuracy
+        if (isMoreAccurate && isNewer) {
+            return true;
+        }
+        /*
         if (isMoreAccurate) {
             return true;
-        } else if (isNewer && !isLessAccurate) {
+        }
+        else if (isNewer && !isLessAccurate) {
             return true;
         } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
             return true;
         }
+        */
+
         return false;
     }
 
@@ -525,12 +543,26 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
     }
 
+    long prevtime = System.currentTimeMillis();
     @Override
     public void onLocationChanged(Location location) {
 
         if ( isBetterLocation(location, mCurrentLocation))
         {
+
             mCurrentLocation = location;
+            mCurrentLocation.getTime();
+            long currentTime = System.currentTimeMillis();
+            /*
+            mDebugTextView.setText("new mCurrentLocation: " + String.format("%3.7f",mCurrentLocation.getLatitude())
+                    + ", " + String.format("%3.7f",mCurrentLocation.getLongitude())
+                    + "\nAccuracy: " + String.format("%3.7f",mCurrentLocation.getAccuracy())
+                    + "\nTime elapsed: " +  String.valueOf((double)(currentTime - prevtime)/1000) );
+                    */
+
+            prevtime = currentTime;
+
+
         }
 
         //mCurrentLocation = location;
@@ -607,7 +639,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             {
                 mOrientationDeg = rotation;
             }
-            mDebugTextView.setText("Rotation: " + mOrientationDeg);
+            //mDebugTextView.setText("Rotation: " + mOrientationDeg);
 
         }
     }

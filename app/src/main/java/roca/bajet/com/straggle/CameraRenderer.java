@@ -55,6 +55,8 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     private Float[] modelValues = new Float [6];
     private Float[] viewValues = new Float [9];
 
+    public int mCameraOrientation;
+
     public float[] orientation = new float[3];
 
     public float mHorizontalViewAngle;
@@ -76,6 +78,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     {
         void onOrientationChange(float [] orientation);
         void onDebugString(String str);
+        void onAzimuthOrientationChange(double orientation);
     }
 
     public void setOnOrientationCallback(OrientationCallback callback)
@@ -219,7 +222,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         for(ImageTexture it : mImageTextures) {
 
             //double distance = 3;
-            //double ItAngle = 301.5f;
+            double ItAngle;
 
             if (it == null)
             {
@@ -227,8 +230,15 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             }
 
             double distance = mCameraLocation.distanceTo(it.mLocation);
-            double ItAngle = mCameraLocation.bearingTo(it.mLocation);
 
+
+
+
+            if (distance > mCameraLocation.getAccuracy() /0.68f)
+            {
+                ItAngle = mCameraLocation.bearingTo(it.mLocation);
+                it.rotateAroundCamera((float) -ItAngle);
+            }
 
             String debugStr = "Camera: " +  String.format("%5.7f",mCameraLocation.getLatitude()) + ", " + String.format("%5.7f",mCameraLocation.getLongitude())
                     + "\nAccuracy: " + String.format("%5.7f",mCameraLocation.getAccuracy()) + ", Z: " +  String.format("%3.1f",orientation[0]);
@@ -239,7 +249,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
                 mOrientationCallback.onDebugString(debugStr);
             }
 
-            it.rotateAroundCamera((float) -ItAngle);
+
 
 
             it.moveFromToCamera((float)-distance * 0.79f);
@@ -253,26 +263,6 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         }
     }
 
-    public double calculateBearing(Location loc1, Location loc2)
-    {
-        //ATAN2(COS(lat1)*SIN(lat2)-SIN(lat1)*COS(lat2)*COS(lon2-lon1), SIN(lon2-lon1)*COS(lat2))
-        //y = Math.sin(λ2-λ1) * Math.cos(φ2);\
-        //x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(λ2-λ1);
-        //brng = Math.atan2(y, x).toDegrees();
-        double loc1Lon = Math.toRadians(loc1.getLongitude());
-        double loc1Lat = Math.toRadians(loc1.getLatitude());
-
-        double loc2Lon = Math.toRadians(loc2.getLongitude());
-        double loc2Lat = Math.toRadians(loc2.getLatitude());
-        double deltaLat = loc2Lat - loc1Lat;
-
-        double y = Math.sin(deltaLat) * Math.cos(loc2Lon);
-        double x = Math.cos(loc1Lon) * Math.sin(loc2Lon) - Math.sin(loc1Lon)*Math.cos(loc2Lon)*Math.cos(deltaLat);
-
-        return (Math.toDegrees(Math.atan2(y,x))+360)%360;
-
-
-    }
 
     public void setCoordinates(Location loc, double lat, double lon)
     {
@@ -301,9 +291,13 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
             SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
 
+
+
             float [] rotateOrientation = new float[3];
 
+
             SensorManager.getOrientation(rotationMatrix,rotateOrientation);
+
             /*
             orientation[0] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[0]));//pitch x
             orientation[1] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[1]));//roll y
@@ -311,11 +305,53 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             */
             orientation[0] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[0]));//pitch x
             orientation[1] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[1]));//roll y
-            orientation[2] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[2]));//azimuth z
+            //orientation[2] = (float)Math.toDegrees(2*Math.asin(sensorEvent.values[2]));//azimuth z
+
+            float a = sensorEvent.values[3];
+            float b = sensorEvent.values[0];
+            float c = sensorEvent.values[1];
+            float d = sensorEvent.values[2];
+            float [] quaternion = new float [4];
+            SensorManager.getQuaternionFromVector(quaternion, sensorEvent.values);
+
+            double azimuth = Math.atan2((double) (2*(a*d+b*c)),Math.pow(a,2)+Math.pow(b,2)-Math.pow(c,2)-Math.pow(d,2));
+
+            float [] baseVector = new float [] {0,0,0,-1}; //w,x,y,z
+            float [] northVector = new float [] {0,0,1,0};
+
+            float [] h = new float [] {sensorEvent.values[3],sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]};
+            float [] hprime = new float [] {h[0], -h[1], -h[2], -h[3]};
+
+            //quaternion_mult(quaternion_mult(q,r),q_conj)
+
+
+
+            float [] rotationVector = quatmultiply(quatmultiply(h,baseVector),hprime);
+
+
+            float [] normRotationVector = normalizeVector(rotationVector);
+            normRotationVector[3] = 0;
+
+            float angle = getAngleBetweenVectors(northVector, normRotationVector);
+            angle *= Math.signum(rotationVector[1]);
+            /*
+            rotationVector[0] = (float)(2*Math.acos(sensorEvent.values[3])); //w
+            rotationVector[1] = (float)(sensorEvent.values[0]/(Math.sin(rotationVector[0]/2)));
+            rotationVector[2] = (float)(sensorEvent.values[1]/(Math.sin(rotationVector[0]/2)));
+            rotationVector[3] = (float)(sensorEvent.values[2]/(Math.sin(rotationVector[0]/2)));
+            rotationVector[0] = (float)Math.toDegrees(rotationVector[0]);
+            */
+            //Matrix.multiplyMV(rotationVector, 0, rotationMatrix, 0, baseVector, 0);
+
+
+
 
             if (mOrientationCallback != null)
             {
-                mOrientationCallback.onOrientationChange(orientation);
+                azimuth = (int) ( Math.toDegrees( angle ) + 360 ) % 360;
+                //azimuth = Math.toDegrees(angle);
+                mOrientationCallback.onAzimuthOrientationChange(azimuth);
+                mOrientationCallback.onOrientationChange(rotationVector);
             }
 
 
@@ -332,5 +368,32 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
+    }
+
+    public float getAngleBetweenVectors(float [] u, float []v)
+    {
+        return (float)Math.acos((u[0]*v[0]+u[1]*v[1]+u[2]*v[2]+u[3]*v[3])/(getVectorMag(u)*getVectorMag(v)));
+    }
+
+    public float [] normalizeVector(float [] vector)
+    {
+        float mag = getVectorMag(vector);
+        return new float [] {vector[0]/mag, vector[1]/mag, vector[2]/mag, vector[3]/mag };
+    }
+
+    public float getVectorMag(float [] vector)
+    {
+        return (float) Math.sqrt( Math.pow(vector[0],2)+Math.pow(vector[1],2)+Math.pow(vector[2],2)+Math.pow(vector[3],2) );
+    }
+
+    public float [] quatmultiply(float [] q, float []r)
+    {
+        float [] n = new float [4];
+        n[0] = r[0]*q[0]-r[1]*q[1]-r[2]*q[2]-r[3]*q[3];
+        n[1] = r[0]*q[1]+r[1]*q[0]-r[2]*q[3]+r[3]*q[2];
+        n[2] = r[0]*q[2]+r[1]*q[3]+r[2]*q[0]-r[3]*q[1];
+        n[3] = r[0]*q[3]-r[1]*q[2]+r[2]*q[1]+r[3]*q[0];
+
+        return n;
     }
 }
