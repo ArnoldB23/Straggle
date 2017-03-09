@@ -14,6 +14,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name">
@@ -23,6 +24,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <provider
+            android:authorities="roca.bajet.com.straggle"
+            android:name=".data.ContentProviderStraggle"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:label="ContentProviderStraggle"
+            android:syncable="true"
+            android:readPermission="roca.bajet.com.straggle.READ"
+            android:writePermission="roca.bajet.com.straggle.WRITE" >
+        </provider>
+
     </application>
 
 </manifest>

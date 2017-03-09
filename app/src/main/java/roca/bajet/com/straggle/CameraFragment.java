@@ -9,10 +9,6 @@ import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
-import android.hardware.SensorManager;
 import android.location.Location;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
@@ -51,19 +47,16 @@ import butterknife.ButterKnife;
 import roca.bajet.com.straggle.objects.ImageTexture;
 import roca.bajet.com.straggle.util.TextureHelper;
 
-import static android.content.Context.SENSOR_SERVICE;
-
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CameraFragment extends Fragment implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener, SensorEventListener {
+public class CameraFragment extends Fragment implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener{
 
     private final String LOG_TAG = getClass().getSimpleName();
     private static final int ACCURACY_RADIUS = 7; //in meters
     private static final int TIME_INTERVAL_MINUTES = 1000 * 60 * 2;
     public static final int PERMISSION_REQUEST_CODE = 123;
-    private static final int ACCELEROMETER_RATE = 1000000;
     private static final int LOCATION_REQUEST_INTERVAL = 10000;
     private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
 
@@ -84,9 +77,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     public float mCameraAzimuth;
     public int mOrientationDeg = 0;
 
-    
-    public SensorManager mSensorManager;
-    public Sensor mAccelerometer;
 
 
 
@@ -114,25 +104,33 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         mGLSurfaceView.setEGLContextClientVersion(2);
         mGLSurfaceView.setEGLConfigChooser(8, 8, 8, 8, 16, 0);
         mGLSurfaceView.getHolder().setFormat(PixelFormat.TRANSLUCENT);
-        mGLSurfaceView.setZOrderOnTop(true);
+        //mGLSurfaceView.setZOrderOnTop(true);
         mGLSurfaceView.setRenderer(mCameraRenderer);
         //mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
-        mSensorManager =(SensorManager)mContext.getSystemService(SENSOR_SERVICE);
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         mCameraRenderer.setOnOrientationCallback(new CameraRenderer.OrientationCallback() {
              @Override
-             public void onOrientationChange(float[] orientation) {
+             public void onOrientationChange(int orientation) {
                  //mCameraAzimuth = orientation;
 
+                 /*
                  String x = String.format("%+3.2f", orientation[1]);
                  String y = String.format("%+3.2f", orientation[2]);
                  String z = String.format("%+3.2f", orientation[3]);
                  String w = String.format("%+3.2f", orientation[0]);
 
+
                  String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z + ", W = " +  w;;
-                 //mDebugTextView.setText(txt);
+                 mDebugTextView.setText(txt);
+                 */
+
+                 if (orientation >= 0)
+                 {
+                     mOrientationDeg = orientation;
+                 }
+
+                 mDebugTextView.setText("Vector Orientation to phone: " + mOrientationDeg);
              }
              @Override
              public void onDebugString(String str) {
@@ -152,7 +150,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
              @Override
              public void onAzimuthOrientationChange(double orientation) {
                  mCameraAzimuth = (float)orientation;
-                 mDebugTextView.setText("azimuth: " + orientation);
+                 //mDebugTextView.setText("azimuth: " + orientation);
              }
          }
         );
@@ -295,9 +293,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         mGoogleApiClient.connect();
         super.onResume();
         mCameraRenderer.startReadingSensor();
-        mSensorManager.registerListener(this, mAccelerometer, ACCELEROMETER_RATE);
 
-        if (mCamera == null) {
+        if (mCamera == null && checkCameraHardware(mContext)) {
             mCamera = getCameraInstance();
             setCameraDisplayOrientation(getActivity(), 0, mCamera);
             mCameraPreview.mCamera = mCamera;
@@ -313,7 +310,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         super.onPause();
 
         mCameraRenderer.stopReadingSensor();
-        mSensorManager.unregisterListener(this);
         mIsLocationGranted = false;
 
         Log.d(LOG_TAG, "onPause");
@@ -324,58 +320,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         }
 
 
-    }
-    public static float[] adjustAccelOrientation(int displayRotation, float[] eventValues)
-    {
-        float[] adjustedValues = new float[3];
-
-        final int axisSwap[][] = {
-                {  1,  -1,  0,  1  },     // ROTATION_0
-                {-1,  -1,  1,  0  },     // ROTATION_90
-                {-1,    1,  0,  1  },     // ROTATION_180
-                {  1,    1,  1,  0  }  }; // ROTATION_270
-
-        final int[] as = axisSwap[displayRotation];
-        adjustedValues[0]  =  (float)as[0] * eventValues[ as[2] ];
-        adjustedValues[1]  =  (float)as[1] * eventValues[ as[3] ];
-        adjustedValues[2]  =  eventValues[2];
-
-        return adjustedValues;
-    }
-
-
-
-    public int getRotationFromAccel()
-    {
-        float x = Math.abs(mOrientation[0]);
-        float y = Math.abs(mOrientation[1]);
-        float z = Math.abs(mOrientation[2]);
-
-        //Landscape
-        if (x/(y+z) > 1f)
-        {
-            if (mOrientation[0] > 0)
-            {
-                return 0;
-            }
-            else{
-                return 180;
-            }
-        }
-        //Portrait
-        else if (y/(x+z) > 1f)
-        {
-            if (mOrientation[1] > 0)
-            {
-                return 90;
-            }
-            else{
-                //return 270;
-                return 90; //Treat 270 degree rotation as upside down portrait
-            }
-        }
-
-        return -1;
     }
 
 
@@ -596,56 +540,5 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     protected void stopLocationUpdates() {
         LocationServices.FusedLocationApi.removeLocationUpdates(
                 mGoogleApiClient, this);
-    }
-
-
-    @Override
-    public void onSensorChanged(SensorEvent sensorEvent) {
-        if (sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-            //mOrientationDeg;
-
-            float x = Math.abs(sensorEvent.values[0]);
-            float y = Math.abs(sensorEvent.values[1]);
-            float z = Math.abs(sensorEvent.values[2]);
-
-            /*
-            mDebugTextView.setText("Accelerometer: " + String.format("%2.2f",sensorEvent.values[0])
-                    + ", " + String.format("%2.2f",sensorEvent.values[1])
-                    + ", " + String.format("%2.2f",sensorEvent.values[2])
-                    + "\nx/y+z ratio: " + String.format("%4.2f",x/(y+z))
-                    + "\ny/x+z ratio: " + String.format("%4.2f",y/(x+z)));
-            */
-
-            mOrientation = sensorEvent.values;
-            //mDebugTextView.setText("Accelerometer: x:y" + String.format("%2.2f",x/y));
-
-
-
-            /*
-            DisplayMetrics displaymetrics = new DisplayMetrics();
-            Display dp = getActivity().getWindowManager().getDefaultDisplay();
-            dp.getMetrics(displaymetrics);
-
-
-            float [] adjustedOrientation = adjustAccelOrientation(dp.getRotation(), mOrientation);
-            mDebugTextView.setText("Accelerometer: " + String.format("%2.2f",adjustedOrientation[0])
-                    + ", " + String.format("%3.2f",adjustedOrientation[1])
-                    + ", " + String.format("%3.2f",adjustedOrientation[2]) );
-
-            */
-
-            int rotation = getRotationFromAccel();
-            if (rotation >= 0)
-            {
-                mOrientationDeg = rotation;
-            }
-            //mDebugTextView.setText("Rotation: " + mOrientationDeg);
-
-        }
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int i) {
-
     }
 }

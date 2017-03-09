@@ -76,7 +76,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
     public interface OrientationCallback
     {
-        void onOrientationChange(float [] orientation);
+        void onOrientationChange(int orientation);
         void onDebugString(String str);
         void onAzimuthOrientationChange(double orientation);
     }
@@ -316,7 +316,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
             double azimuth = Math.atan2((double) (2*(a*d+b*c)),Math.pow(a,2)+Math.pow(b,2)-Math.pow(c,2)-Math.pow(d,2));
 
-            float [] baseVector = new float [] {0,0,0,-1}; //w,x,y,z
+            float [] baseAzimuthVector = new float [] {0,0,0,-1}; //w,x,y,z
             float [] northVector = new float [] {0,0,1,0};
 
             float [] h = new float [] {sensorEvent.values[3],sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]};
@@ -326,14 +326,14 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
 
 
-            float [] rotationVector = quatmultiply(quatmultiply(h,baseVector),hprime);
+            float [] rotationAzimuthVector = quatmultiply(quatmultiply(h,baseAzimuthVector),hprime);
 
 
-            float [] normRotationVector = normalizeVector(rotationVector);
+            float [] normRotationVector = normalizeVector(rotationAzimuthVector);
             normRotationVector[3] = 0;
 
             float angle = getAngleBetweenVectors(northVector, normRotationVector);
-            angle *= Math.signum(rotationVector[1]);
+            angle *= Math.signum(rotationAzimuthVector[1]);
             /*
             rotationVector[0] = (float)(2*Math.acos(sensorEvent.values[3])); //w
             rotationVector[1] = (float)(sensorEvent.values[0]/(Math.sin(rotationVector[0]/2)));
@@ -341,8 +341,12 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             rotationVector[3] = (float)(sensorEvent.values[2]/(Math.sin(rotationVector[0]/2)));
             rotationVector[0] = (float)Math.toDegrees(rotationVector[0]);
             */
-            //Matrix.multiplyMV(rotationVector, 0, rotationMatrix, 0, baseVector, 0);
+            //Matrix.multiplyMV(rotationVector, 0, rotationMatrix, 0, baseAzimuthVector, 0);
 
+            float [] baseYCameraOrientationVector = new float [] {0,0,1,0}; //w,x,y,z
+            float [] rotationYCameraOrientationVector = quatmultiply(quatmultiply(h,baseYCameraOrientationVector),hprime);
+            float [] baseXCameraOrientationVector = new float [] {0,1,0,0}; //w,x,y,z
+            float [] rotationXCameraOrientationVector = quatmultiply(quatmultiply(h,baseXCameraOrientationVector),hprime);
 
 
 
@@ -351,7 +355,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
                 azimuth = (int) ( Math.toDegrees( angle ) + 360 ) % 360;
                 //azimuth = Math.toDegrees(angle);
                 mOrientationCallback.onAzimuthOrientationChange(azimuth);
-                mOrientationCallback.onOrientationChange(rotationVector);
+                mOrientationCallback.onOrientationChange(getRotationFromVectors(rotationXCameraOrientationVector[3],rotationYCameraOrientationVector[3]));
             }
 
 
@@ -369,6 +373,37 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
+
+    private int getRotationFromVectors(float xZVector, float yZVector)
+    {
+        //landscape
+        if (Math.abs(xZVector) > 0.75f)
+        {
+            if (xZVector > 0)
+            {
+                return 0;
+            }
+            else{
+                return 180;
+            }
+        }
+        //portrait
+        else if (Math.abs(yZVector) > 0.75f)
+        {
+            if (yZVector > 0)
+            {
+                return 90;
+            }
+            else{
+                //return 270;
+                return 90; //Treat 270 degree rotation as upside down portrait
+            }
+        }
+
+
+        return -1;
+    }
+
 
     public float getAngleBetweenVectors(float [] u, float []v)
     {
