@@ -2,9 +2,11 @@ package roca.bajet.com.straggle;
 
 
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.PixelFormat;
@@ -20,6 +22,9 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
@@ -41,9 +46,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import roca.bajet.com.straggle.data.ContentProviderDbSchema.ImageTextures;
+import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.objects.ImageTexture;
 import roca.bajet.com.straggle.util.TextureHelper;
 
@@ -51,7 +59,10 @@ import roca.bajet.com.straggle.util.TextureHelper;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CameraFragment extends Fragment implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener{
+public class CameraFragment extends Fragment implements GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener,
+        LoaderManager.LoaderCallbacks<Cursor>{
 
     private final String LOG_TAG = getClass().getSimpleName();
     private static final int ACCURACY_RADIUS = 7; //in meters
@@ -59,11 +70,14 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     public static final int PERMISSION_REQUEST_CODE = 123;
     private static final int LOCATION_REQUEST_INTERVAL = 10000;
     private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
+    private static final float SEARCH_RADIUS = 145f; //in meters
+    private static final int IMAGESEARCH_LOADER = 0;
 
     @BindView(R.id.gl_surfaceview) public GLSurfaceView mGLSurfaceView;
     @BindView(R.id.debug_textview) public TextView mDebugTextView;
     @BindView(R.id.take_picture_button) public ImageButton mTakePickButton;
 
+    private String debugText;
     public CameraRenderer mCameraRenderer;
     public Camera mCamera;
     public CameraPreview mCameraPreview;
@@ -76,8 +90,15 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     public float [] mOrientation;
     public float mCameraAzimuth;
     public int mOrientationDeg = 0;
+    public HashSet<String> mITset;
 
 
+    public static final String [] IMAGESEARCH_COLUMNS = {
+            ImageTextures.COL_FILENAME,
+            ImageTextures.COL_LAT,
+            ImageTextures.COL_LON,
+            ImageTextures.COL_ANGLE
+    };
 
 
     public CameraFragment() {
@@ -108,12 +129,12 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         mGLSurfaceView.setRenderer(mCameraRenderer);
         //mGLSurfaceView.setRenderMode(GLSurfaceView.RENDERMODE_WHEN_DIRTY);
 
+        Log.d(LOG_TAG, "onCreateView, ContentProviderOpenHelper.DEFAULT_USER_ID = " + ContentProviderOpenHelper.DEFAULT_USER_ID);
 
+        mITset = new HashSet<>();
         mCameraRenderer.setOnOrientationCallback(new CameraRenderer.OrientationCallback() {
              @Override
              public void onOrientationChange(int orientation) {
-                 //mCameraAzimuth = orientation;
-
                  /*
                  String x = String.format("%+3.2f", orientation[1]);
                  String y = String.format("%+3.2f", orientation[2]);
@@ -130,7 +151,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                      mOrientationDeg = orientation;
                  }
 
-                 mDebugTextView.setText("Vector Orientation to phone: " + mOrientationDeg);
+                 //mDebugTextView.setText("Vector Orientation to phone: " + mOrientationDeg);
              }
              @Override
              public void onDebugString(String str) {
@@ -140,7 +161,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                      @Override
                      public void run() {
 
-                         //mDebugTextView.setText(fstr);
+                         mDebugTextView.setText(fstr);
 
                          //Log.d(LOG_TAG, "Debug " + fstr);
                      }
@@ -151,6 +172,17 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
              public void onAzimuthOrientationChange(double orientation) {
                  mCameraAzimuth = (float)orientation;
                  //mDebugTextView.setText("azimuth: " + orientation);
+             }
+
+             @Override
+             public void onAccelerometerChange(float[] data) {
+                 String x = String.format("%+3.0f", data[0]);
+                 String y = String.format("%+3.0f", data[1]);
+                 String z = String.format("%+3.0f", data[2]);
+
+                 String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z;
+                 mDebugTextView.setText(txt);
+
              }
          }
         );
@@ -220,18 +252,32 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                                                     + Environment.getExternalStorageDirectory())));
                                 }
 
+                                final Location currentLocation = new Location(mCurrentLocation);
+
                                 mGLSurfaceView.queueEvent(new Runnable() {
                                     @Override
                                     public void run() {
-                                        ImageTexture im = new ImageTexture(pictureFile.getAbsolutePath(), mCurrentLocation, mContext);
+                                        ImageTexture im = new ImageTexture(pictureFile.getAbsolutePath(), currentLocation, mContext);
                                         //im.rotateAroundCamera(-mCameraAzimuth[2]+180);
-                                        im.rotateAroundCamera(-mCameraAzimuth);
+                                        im.mFilename = pictureFile.getName();
+                                        im.rotateAroundCamera(mCameraAzimuth);
                                        mCameraRenderer.mImageTextures.add(im);
                                     }
                                 });
 
+                                mITset.add(pictureFile.getName());
 
-                                TextureHelper.setImageTextureLocation(mContext, pictureFile.getAbsolutePath(), mCurrentLocation);
+
+                                ContentValues cv = new ContentValues();
+                                cv.put(ImageTextures.COL_FILENAME, pictureFile.getName());
+                                cv.put(ImageTextures.COL_LAT, currentLocation.getLatitude());
+                                cv.put(ImageTextures.COL_LON, currentLocation.getLongitude());
+                                cv.put(ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
+                                cv.put(ImageTextures.COL_ANGLE, mCameraAzimuth);
+                                Uri imageTexturesUri = ImageTextures.CONTENT_URI;
+                                mContext.getContentResolver().insert(imageTexturesUri,cv);
+
+                                //TextureHelper.setImageTextureLocation(mContext, pictureFile.getAbsolutePath(), currentLocation);
 
 
                             } catch (FileNotFoundException e) {
@@ -265,6 +311,17 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                         }
                     }
 
+                    int deleteCount = mContext.getContentResolver().delete(ImageTextures.CONTENT_URI,null,null);
+                    Log.d(LOG_TAG, "Contentresolver delete:  " + deleteCount);
+
+                    mGLSurfaceView.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            mCameraRenderer.mImageTextures.clear();
+                        }
+                    });
+
+                    mITset.clear();
                     return false;
                 }
             });
@@ -286,6 +343,13 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         }
 
         return rootView;
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+
+
+        super.onActivityCreated(savedInstanceState);
     }
 
     @Override
@@ -320,6 +384,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         }
 
 
+
+
     }
 
 
@@ -346,7 +412,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     }
 
     /** Check if this device has a camera */
-    private boolean checkCameraHardware(Context context) {
+    public static boolean checkCameraHardware(Context context) {
         if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
             // this device has a camera
             return true;
@@ -397,7 +463,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
      * @param location  The new Location that you want to evaluate
      * @param currentBestLocation  The current Location fix, to which you want to compare the new one
      */
-    protected boolean isBetterLocation(Location location, Location currentBestLocation) {
+    public static boolean isBetterLocation(Location location, Location currentBestLocation) {
         if (currentBestLocation == null) {
             // A new location is always better than no location
             return true;
@@ -429,9 +495,13 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                 currentBestLocation.getProvider());
 
         // Determine location quality using a combination of timeliness and accuracy
+
+
         if (isMoreAccurate && isNewer) {
             return true;
         }
+
+
         /*
         if (isMoreAccurate) {
             return true;
@@ -443,11 +513,12 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         }
         */
 
+
         return false;
     }
 
     /** Checks whether two providers are the same */
-    private boolean isSameProvider(String provider1, String provider2) {
+    public static boolean isSameProvider(String provider1, String provider2) {
         if (provider1 == null) {
             return provider2 == null;
         }
@@ -497,25 +568,26 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             mCurrentLocation = location;
             mCurrentLocation.getTime();
             long currentTime = System.currentTimeMillis();
+
             /*
             mDebugTextView.setText("new mCurrentLocation: " + String.format("%3.7f",mCurrentLocation.getLatitude())
                     + ", " + String.format("%3.7f",mCurrentLocation.getLongitude())
                     + "\nAccuracy: " + String.format("%3.7f",mCurrentLocation.getAccuracy())
                     + "\nTime elapsed: " +  String.valueOf((double)(currentTime - prevtime)/1000) );
-                    */
-
+            */
             prevtime = currentTime;
 
+            mCameraRenderer.mNewCameraLocation.add(mCurrentLocation);
 
+            //File imageFile = new File (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)+ File.separator + "Straggle", filename);
+            //ImageTexture im = new ImageTexture(imageFile.getAbsolutePath(), mCurrentLocation, mContext);
+            getLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, this);
         }
 
         //mCurrentLocation = location;
 
         double latitude = location.getLatitude();
         double longitude = location.getLongitude();
-
-        mCameraRenderer.mCameraLocation = mCurrentLocation;
-
 
         //Log.d(LOG_TAG, "onLocationChanged: " + String.format("%3.6f", latitude) + ", " + String.format("%3.6f", longitude));
     }
@@ -540,5 +612,129 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     protected void stopLocationUpdates() {
         LocationServices.FusedLocationApi.removeLocationUpdates(
                 mGoogleApiClient, this);
+    }
+
+    @Override
+    public Loader onCreateLoader(int id, Bundle args) {
+
+        CursorLoader cursorLoader = null;
+
+        if (id == IMAGESEARCH_LOADER)
+        {
+            Location currentLocation = new Location(mCurrentLocation);
+
+
+            double currentLat = currentLocation.getLatitude();
+            double currentLon = currentLocation.getLongitude();
+
+            /*
+            ((<lat> - LAT_COLUMN) * (<lat> - LAT_COLUMN) +
+            (<lng> - LNG_COLUMN) * (<lng> - LNG_COLUMN) * <fudge>)
+             */
+
+            double fudge = Math.pow(Math.cos(Math.toRadians(currentLat)),2);
+            Uri imageUri = ImageTextures.buildImageTextureUriWithUserId(ContentProviderOpenHelper.DEFAULT_USER_ID);
+            String orderby = "( (" + currentLat + " - " + ImageTextures.COL_LAT + ") * (" + currentLat + " - " + ImageTextures.COL_LAT + ") + (" +
+                    currentLon + " - " + ImageTextures.COL_LON + ") * (" + currentLon + " - " + ImageTextures.COL_LON + ") * " + fudge + " ) " +
+                    " ASC ";
+            //Location.distanceBetween(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude(),);
+
+            Location wLoc = CameraRenderer.calculateDestinationLocation(currentLocation, 270, 1113.2f);
+            Location eLoc = CameraRenderer.calculateDestinationLocation(currentLocation, 90, 1113.2f);
+
+            double nLat = (currentLat + 0.01);//0.01 in degrees decimal is 1.1132 km Lat
+            double sLat = (currentLat - 0.01);
+
+            String selection = ImageTextures.COL_LON + " > " + wLoc.getLongitude() + " AND " +  ImageTextures.COL_LON + " < " + eLoc.getLongitude() +
+                    " AND " +ImageTextures.COL_LAT + " > " + sLat + " AND " + ImageTextures.COL_LAT + " < " + nLat;
+
+
+            Log.d(LOG_TAG, "onCreateLoader, selection: " + selection);
+            Log.d(LOG_TAG, "onCreateLoader, orderby: " + orderby);
+
+            cursorLoader = new CursorLoader(getActivity(),
+                    imageUri,
+                    IMAGESEARCH_COLUMNS,
+                    selection,
+                    null,
+                    orderby);
+        }
+
+        return cursorLoader;
+    }
+
+    @Override
+    public void onLoadFinished(Loader loader, Cursor data) {
+
+
+        final Location currentLocation = new Location(mCurrentLocation);
+
+        double currentLat = currentLocation.getLatitude();
+        double currentLon = currentLocation.getLongitude();
+        double lat;
+        double lon;
+        float [] distance = new float [3];
+
+
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
+
+        /*
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator +
+                "IMG_"+ timeStamp + ".jpg")
+        */
+
+        if (loader.getId() == IMAGESEARCH_LOADER)
+        {
+            Log.d(LOG_TAG, "onLoadFinished: count = " + data.getCount()) ;
+
+            while(data.moveToNext())
+            {
+
+
+                lat = data.getDouble(data.getColumnIndex(ImageTextures.COL_LAT));
+                lon = data.getDouble(data.getColumnIndex(ImageTextures.COL_LON));
+                final float angle = (float)data.getDouble(data.getColumnIndex(ImageTextures.COL_ANGLE));
+
+                Location.distanceBetween(currentLat, currentLon, lat, lon, distance);
+
+                Log.d(LOG_TAG, "onLoadFinished: distance = " + distance[0]) ;
+
+                if (distance[0] > SEARCH_RADIUS)
+                {
+                    Log.d(LOG_TAG, "onLoadFinished: distance > " + SEARCH_RADIUS) ;
+                    break;
+                }
+
+
+                final String filename = data.getString(data.getColumnIndex(ImageTextures.COL_FILENAME));
+                final File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+
+
+                if (!mITset.contains(filename))
+                {
+                    Log.d(LOG_TAG, "onLoadFinished: Adding to mItset, " + filename) ;
+
+                    mGLSurfaceView.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ImageTexture im = new ImageTexture(mediaFile.getAbsolutePath(), currentLocation, mContext);
+                            im.rotateAroundCamera(angle);
+                            im.mFilename = filename;
+                            mCameraRenderer.mImageTextures.add(im);
+                        }
+                    });
+
+                    mITset.add(filename);
+                }
+
+            }
+
+
+        }
+    }
+
+    @Override
+    public void onLoaderReset(Loader loader) {
+
     }
 }

@@ -34,6 +34,7 @@ public class ImageTexture {
     public Float[] mRotationValuesXYZ = new Float [3];
     public float opacity;
     public Location mLocation;
+    public String mFilename;
 
     private static float[] VERTEX_DATA;
     private VertexArray vertexArray;
@@ -119,7 +120,7 @@ public class ImageTexture {
     {
         setIdentityM(mModelMatrix, 0);
 
-        rotateM(mModelMatrix, 0, mCameraRotationAngle, 0, 1, 0); //rotate around camera
+        rotateM(mModelMatrix, 0, -mCameraRotationAngle, 0, 1, 0); //rotate around camera
         multiplyMM(mModelMatrix, 0,  mModelMatrix, 0, cameraTranslateMatrix, 0);//translate camera z position
         translateM(mModelMatrix, 0, mTranslationValuesXYZ[0], mTranslationValuesXYZ[1], mTranslationValuesXYZ[2]);//translate object with respect to own axis
 

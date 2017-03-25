@@ -85,7 +85,7 @@ public class ContentProviderStraggle extends ContentProvider {
             case URI_MATCH_IMAGETEXTURES_ID:
                 builder.setTables(TBL_IMAGETEXTURES);
 
-                where = ImageTextures._ID + " = ?";
+                where = ImageTextures.COL_USER_ID + " = ?";
                 cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
                 break;
 
@@ -162,7 +162,7 @@ public class ContentProviderStraggle extends ContentProvider {
                 id = db.insert(TBL_IMAGETEXTURES, null, contentValues);
                 break;
             case URI_MATCH_IMAGETEXTURES_ID:
-                contentValues.put(ImageTextures._ID, uri.getLastPathSegment());
+                contentValues.put(ImageTextures.COL_USER_ID, uri.getLastPathSegment());
                 id = db.insert(TBL_IMAGETEXTURES, null, contentValues);
                 break;
 
@@ -205,7 +205,7 @@ public class ContentProviderStraggle extends ContentProvider {
                 deleteCount = db.delete(TBL_IMAGETEXTURES, selection, selectionArgs);
                 break;
             case URI_MATCH_IMAGETEXTURES_ID: {
-                String where = ImageTextures._ID + " = ?";
+                String where = ImageTextures.COL_USER_ID+ " = ?";
                 String[] concateSelectionArgs;
                 if (!TextUtils.isEmpty(selection)) {
                     where += " AND " + selection;
@@ -306,7 +306,7 @@ public class ContentProviderStraggle extends ContentProvider {
                 updateCount = db.update(TBL_IMAGETEXTURES, contentValues, selection, selectionArgs);
                 break;
             case URI_MATCH_IMAGETEXTURES_ID: {
-                String where = ImageTextures._ID + " = ?";
+                String where = ImageTextures.COL_USER_ID + " = ?";
 
                 updateCount = db.update(TBL_IMAGETEXTURES, contentValues, where, new String [] {uri.getLastPathSegment()});
                 break;

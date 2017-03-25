@@ -2,11 +2,12 @@
 <manifest package="roca.bajet.com.straggle"
           xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.CAMERA"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <protected-broadcast android:name="android.intent.action.MEDIA_MOUNTED" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
+    <protected-broadcast android:name="android.intent.action.MEDIA_MOUNTED"/>
 
     <application
         android:allowBackup="true"
@@ -14,26 +15,34 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBKZ_J97CEKvYesTEJz-bv9USP7Nt9-le4"/>
+        <meta-data
+            android:name="com.google.android.gms.version"
+            android:value="@integer/google_play_services_version"/>
 
         <activity
-            android:name=".MainActivity"
+            android:name=".CameraActivity"
             android:label="@string/app_name">
+        </activity>
+
+        <activity android:name=".OverviewActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
         <provider
-            android:authorities="roca.bajet.com.straggle"
             android:name=".data.ContentProviderStraggle"
+            android:authorities="roca.bajet.com.straggle"
             android:exported="true"
             android:grantUriPermissions="true"
             android:label="ContentProviderStraggle"
-            android:syncable="true"
             android:readPermission="roca.bajet.com.straggle.READ"
-            android:writePermission="roca.bajet.com.straggle.WRITE" >
+            android:syncable="true"
+            android:writePermission="roca.bajet.com.straggle.WRITE">
         </provider>
 
     </application>

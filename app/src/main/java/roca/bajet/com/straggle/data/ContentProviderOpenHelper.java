@@ -13,6 +13,7 @@ public class ContentProviderOpenHelper extends SQLiteOpenHelper {
 
     private static final  String NAME = ContentProviderDbSchema.DB_NAME;
     private static final int VERSION = 1;
+    public static long DEFAULT_USER_ID;
 
     public ContentProviderOpenHelper (Context c)
     {
@@ -21,12 +22,17 @@ public class ContentProviderOpenHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
-        sqLiteDatabase.execSQL(ContentProviderDbSchema.DDL_CREATE_TBL_IMAGETEXTURES);
+
         sqLiteDatabase.execSQL(ContentProviderDbSchema.DDL_CREATE_TBL_USERS);
+        sqLiteDatabase.execSQL(ContentProviderDbSchema.DDL_CREATE_TBL_IMAGETEXTURES);
+        sqLiteDatabase.execSQL(ContentProviderDbSchema.DDL_CREATE_INDEX);
 
         ContentValues cv = new ContentValues();
         cv.put(ContentProviderDbSchema.Users.COL_USERNAME, "DEFAULT_USER");
         sqLiteDatabase.insert(ContentProviderDbSchema.TBL_USERS, null, cv);
+
+
+
     }
 
     @Override

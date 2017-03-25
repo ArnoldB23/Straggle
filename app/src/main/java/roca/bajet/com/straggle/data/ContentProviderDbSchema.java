@@ -1,6 +1,7 @@
 package roca.bajet.com.straggle.data;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
@@ -13,6 +14,7 @@ public class ContentProviderDbSchema {
     public static final String DB_NAME = "contentprovider.db";
     public static final String TBL_IMAGETEXTURES = "imagetextures";
     public static final String TBL_USERS = "users";
+    public static final String INDEX_NAME = "index_gps";
 
     public static final String AUTHORITY = "roca.bajet.com.straggle";
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + AUTHORITY);
@@ -24,8 +26,10 @@ public class ContentProviderDbSchema {
             "CREATE TABLE " + TBL_IMAGETEXTURES + " ( " +
             ImageTextures._ID + "   INTEGER PRIMARY KEY AUTOINCREMENT, " +
             ImageTextures.COL_FILENAME + "  TEXT, " +
-            ImageTextures.COL_LON + "  TEXT, " +
-            ImageTextures.COL_LAT + "  TEXT, " +
+            ImageTextures.COL_LON + "  REAL, " +
+            ImageTextures.COL_LAT + "  REAL, " +
+            ImageTextures.COL_ANGLE + " REAL, " +
+            ImageTextures.COL_USER_ID + " INTEGER, " +
             " FOREIGN KEY ( " + ImageTextures.COL_USER_ID + " ) REFERENCES " +
             TBL_USERS + " ( " + Users._ID + " ) ON DELETE CASCADE " +
             " ) ";
@@ -33,7 +37,10 @@ public class ContentProviderDbSchema {
     public static final String DDL_CREATE_TBL_USERS =
             "CREATE TABLE " + TBL_USERS + " ( " +
             Users._ID + "  INTEGER PRIMARY KEY AUTOINCREMENT, " +
-            Users.COL_USERNAME + "  TEXT ";
+            Users.COL_USERNAME + "  TEXT ) ";
+
+    public static final String DDL_CREATE_INDEX = "CREATE INDEX " + INDEX_NAME + " ON " + TBL_IMAGETEXTURES
+            + " (" + ImageTextures.COL_LAT + ", " + ImageTextures.COL_LON + ")";
 
     public static final String DDL_DROP_TBL_IMAGETEXTURES = "DROP TABLE IF EXITS " + TBL_IMAGETEXTURES;
     public static final String DDL_DROP_TBL_USERS = "DROP TABLE IF EXITS " + TBL_USERS;
@@ -47,6 +54,7 @@ public class ContentProviderDbSchema {
         public static final String COL_USER_ID = "user_id";
         public static final String COL_LON = "lon";
         public static final String COL_LAT = "lat";
+        public static final String COL_ANGLE = "angle";
 
         public static final String SORT_ORDER_DEFAULT = COL_FILENAME + " ASC";
 
@@ -54,6 +62,13 @@ public class ContentProviderDbSchema {
         {
             return CONTENT_URI.buildUpon().appendPath(filename).build();
         }
+
+        public static Uri buildImageTextureUriWithUserId(long userId)
+        {
+            return ContentUris.withAppendedId(CONTENT_URI,userId);
+        }
+
+
     }
 
     public static final class Users implements BaseColumns {
