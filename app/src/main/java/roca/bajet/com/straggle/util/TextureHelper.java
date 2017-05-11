@@ -14,6 +14,7 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
@@ -223,7 +224,7 @@ public class TextureHelper {
         return BitmapFactory.decodeByteArray(data, 0, data.length, options);
     }
 
-    public static Bitmap getclip(Bitmap bitmap) {
+    public static Bitmap getCircleClip(Bitmap bitmap) {
         Bitmap output;
 
         if (bitmap.getWidth() > bitmap.getHeight()) {
@@ -253,6 +254,71 @@ public class TextureHelper {
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
         canvas.drawBitmap(bitmap, rect, rect, paint);
         return output;
+    }
+
+    public static Bitmap getSquareClip(Bitmap bitmap) {
+        Bitmap output;
+
+        if (bitmap.getWidth() > bitmap.getHeight()) {
+            output = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getHeight(), bitmap.getHeight());
+        } else {
+            output = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getWidth());
+        }
+
+        return output;
+    }
+
+    public static Bitmap getLayeredBitmap(Bitmap [] bps, Context c) {
+        Bitmap output;
+
+        /*
+        ArrayList<BitmapDrawable> bitmapDrawables = new ArrayList<>(3);
+
+        for (int i = 0; i < bps.length; i++)
+        {
+            BitmapDrawable bitmapDrawable = new BitmapDrawable(c.getResources(), bps[i]);
+            bitmapDrawable.setGravity(Gravity.CENTER);
+            int a = i *10;
+            bitmapDrawable.setBounds(a, a, a + bps[i].getWidth(), a + bps[i].getHeight());
+            bitmapDrawables.add(bitmapDrawable);
+
+        }
+
+
+        LayerDrawable layerDrawable = new LayerDrawable( bitmapDrawables.toArray(new Drawable[bitmapDrawables.size()]));
+
+        output = drawableToBitmap(layerDrawable);
+        */
+        int width = bps[0].getWidth();
+        int height = bps[0].getHeight();
+        output = Bitmap.createBitmap(width + bps.length*10, height + bps.length*10, Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas (output);
+        Rect entireRect = new Rect(0, 0, bps[0].getWidth(), bps[0].getHeight());
+
+        for (int i = 0; i < bps.length; i++)
+        {
+            int a = i*10;
+            Rect offsetRect = new Rect(a, a, bps[i].getWidth()+a, bps[i].getHeight()+a);
+            canvas.drawBitmap(bps[i], entireRect, offsetRect,null);
+        }
+
+        return output;
+    }
+
+    public static Bitmap drawableToBitmap (Drawable drawable) {
+
+        int width = drawable.getIntrinsicWidth();
+        width = width > 0 ? width : 1;
+        int height = drawable.getIntrinsicHeight();
+        height = height > 0 ? height : 1;
+
+        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+        drawable.draw(canvas);
+
+        return bitmap;
     }
 
 

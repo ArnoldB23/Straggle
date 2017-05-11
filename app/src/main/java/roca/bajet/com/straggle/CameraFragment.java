@@ -297,6 +297,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                 @Override
                 public boolean onLongClick(View view) {
 
+                    /*
                     File directory = new File(Environment.getExternalStoragePublicDirectory(
                             Environment.DIRECTORY_PICTURES), "Straggle");
                     File[] files = directory.listFiles();
@@ -322,6 +323,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                     });
 
                     mITset.clear();
+
+                    */
                     return false;
                 }
             });

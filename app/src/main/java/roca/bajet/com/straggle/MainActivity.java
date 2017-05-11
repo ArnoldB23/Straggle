@@ -13,6 +13,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -35,19 +36,26 @@ import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.maps.android.clustering.Cluster;
+import com.google.maps.android.clustering.ClusterItem;
+import com.google.maps.android.clustering.ClusterManager;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import roca.bajet.com.straggle.Map.ImageBubbleIcon;
+import roca.bajet.com.straggle.Map.ImageBubbleIconRenderer;
+import roca.bajet.com.straggle.Map.OverviewClusterManager;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.util.TextureHelper;
 
-public class OverviewActivity extends Activity implements OnMapReadyCallback, GoogleMap.OnCameraMoveStartedListener,
+public class MainActivity extends Activity implements OnMapReadyCallback, GoogleMap.OnCameraMoveStartedListener,
         GoogleMap.OnCameraMoveListener,
         GoogleMap.OnCameraMoveCanceledListener,
         GoogleMap.OnCameraIdleListener,
@@ -57,7 +65,13 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
         GoogleApiClient.OnConnectionFailedListener,
         LocationListener,
         SensorEventListener,
-        LoaderManager.LoaderCallbacks<Cursor>{
+        LoaderManager.LoaderCallbacks<Cursor>,
+        OverviewClusterManager.onClusterManagerCallback,
+        ClusterManager.OnClusterClickListener<ImageBubbleIcon>,
+        ClusterManager.OnClusterInfoWindowClickListener<ImageBubbleIcon>,
+        ClusterManager.OnClusterItemClickListener<ImageBubbleIcon>,
+        ClusterManager.OnClusterItemInfoWindowClickListener<ImageBubbleIcon>
+        {
 
     private TextView mSlidingUpPanel;
     private MapFragment mMapFragment;
@@ -72,13 +86,15 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
     private Location mCurrentLocation;
+    private Location mPreviousCurrentLocation;
     private Marker mCurrentLocationMarker;
-    public HashMap<String, Marker> mITmap;
+    public HashMap<String, ImageBubbleIcon> mITmap;
+    private OverviewClusterManager<ImageBubbleIcon> mClusterManager;
     private static final int LOCATION_REQUEST_INTERVAL = 10000;
     private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
 
     private static final int PERMISSION_REQUEST_FINE_LOCATION = 36;
-    private final String LOG_TAG = OverviewActivity.class.getSimpleName();
+    private final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final int IMAGESEARCH_LOADER = 0;
     private static final String [] IMAGESEARCH_COLUMNS = {
             ContentProviderDbSchema.ImageTextures.COL_FILENAME,
@@ -148,16 +164,25 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
     public void onMapReady(GoogleMap googleMap) {
         mGoogleMap = googleMap;
 
-        mGoogleMap.setOnCameraIdleListener(this);
+        //mGoogleMap.setOnCameraIdleListener(this);
         mGoogleMap.setOnCameraMoveStartedListener(this);
         mGoogleMap.setOnCameraMoveListener(this);
         mGoogleMap.setOnCameraMoveCanceledListener(this);
 
 
+        mClusterManager = new OverviewClusterManager<ImageBubbleIcon>(this, mGoogleMap);
+        mClusterManager.setOnClusterManagerCallback(this);
+        mClusterManager.setRenderer(new ImageBubbleIconRenderer(getApplicationContext(), mGoogleMap, mClusterManager));
+        mClusterManager.setOnClusterClickListener(this);
+
+        mGoogleMap.setOnCameraIdleListener(mClusterManager);
+        mGoogleMap.setOnMarkerClickListener(mClusterManager);
+
 
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
             mGoogleMap.setMyLocationEnabled(true);
+
 
 
             mCurrentLocationMarker = mGoogleMap.addMarker(new MarkerOptions()
@@ -167,13 +192,15 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
                     .alpha(0.6f)
                     .flat(true));
 
+
+            /*
            mGoogleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
                @Override
                public boolean onMarkerClick(Marker marker) {
 
                    if ( marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId()) )
                    {
-                       Intent i = new Intent(OverviewActivity.this, CameraActivity.class);
+                       Intent i = new Intent(MainActivity.this, CameraActivity.class);
                        startActivity(i);
                    }
 
@@ -181,6 +208,8 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
                    return false;
                }
            });
+
+           */
 
             //mGoogleMap.setOnMarkerLongClickListener
 
@@ -226,7 +255,7 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
 
         if (mCurrentLocation != null)
         {
-            getLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, OverviewActivity.this);
+            getLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
         }
 
 
@@ -289,10 +318,13 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
             mGoogleMap.moveCamera(cameraUpdate);
         }
 
-        if(CameraFragment.isBetterLocation(location, mCurrentLocation))
-        {
-            mCurrentLocation = location;
-        }
+        mPreviousCurrentLocation = mCurrentLocation;
+        mCurrentLocation = location;
+
+        LatLng latlng = new LatLng(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude());
+
+
+        mCurrentLocationMarker.setPosition(latlng);
 
 
 
@@ -345,10 +377,7 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
 
             if (mCurrentLocation != null && mGoogleMap != null)
             {
-                LatLng latlng = new LatLng(mCurrentLocation.getLatitude(),mCurrentLocation.getLongitude());
 
-
-                mCurrentLocationMarker.setPosition(latlng);
                 mCurrentLocationMarker.setRotation(mAzimuth);
 
             }
@@ -367,10 +396,14 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
 
         if (id == IMAGESEARCH_LOADER)
         {
-            Location currentLocation = new Location(mCurrentLocation);
 
-            double currentLat = currentLocation.getLatitude();
-            double currentLon = currentLocation.getLongitude();
+
+            double currentLat = mGoogleMap.getCameraPosition().target.latitude;
+            double currentLon = mGoogleMap.getCameraPosition().target.longitude;
+
+            Location currentLocation = new Location(LocationManager.GPS_PROVIDER);
+            currentLocation.setLongitude(currentLon);
+            currentLocation.setLatitude(currentLat);
 
             /*
             ((<lat> - LAT_COLUMN) * (<lat> - LAT_COLUMN) +
@@ -410,10 +443,10 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
-        final Location currentLocation = new Location(mCurrentLocation);
 
-        double currentLat = currentLocation.getLatitude();
-        double currentLon = currentLocation.getLongitude();
+
+        double currentLat = mGoogleMap.getCameraPosition().target.latitude;
+        double currentLon = mGoogleMap.getCameraPosition().target.longitude;
         String filename;
         double lat;
         double lon;
@@ -434,7 +467,7 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
 
                 Location.distanceBetween(currentLat, currentLon, lat, lon, distance);
 
-                Log.d(LOG_TAG, "onLoadFinished: distance = " + distance[0]) ;
+
 
                 if (distance[0] > mCameraRadius)
                 {
@@ -442,6 +475,7 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
                     break;
                 }
 
+                Log.d(LOG_TAG, "onLoadFinished: distance = " + distance[0]) ;
 
 
                 filename = data.getString(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
@@ -455,20 +489,30 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
                     Bitmap bp = TextureHelper.decodeSampledBitmapFromFile(mediaFile.getAbsolutePath(), 48, 48);
 
                     LatLng latlng = new LatLng(lat, lon);
+
+                    /*
                     Marker newImageIcon = mGoogleMap.addMarker(new MarkerOptions()
                     .position(latlng)
-                    .icon(BitmapDescriptorFactory.fromBitmap(TextureHelper.getclip(bp)))
+                    .icon(BitmapDescriptorFactory.fromBitmap(TextureHelper.getCircleClip(bp)))
                     .flat(true)
                     .anchor(0.5f, 0.5f));
 
-                    newImageIcon.setTag(toggleUpdate);
+                    */
+
+                    ImageBubbleIcon newImageIcon = new ImageBubbleIcon(latlng,TextureHelper.getSquareClip(bp));
+
+                    mClusterManager.addItem(newImageIcon);
+
+                    newImageIcon.mToggleUpdate = toggleUpdate;
 
                     mITmap.put(filename, newImageIcon);
                 }
                 else {
-                    mITmap.get(filename).setTag(toggleUpdate);
+                    //mITmap.get(filename).setTag(toggleUpdate);
+                    mITmap.get(filename).mToggleUpdate = toggleUpdate;
                 }
             }
+
 
 
             ArrayList<String> deleteList = new ArrayList<>();
@@ -476,13 +520,15 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
             //Remove unneeded markers
             for (String f : mITmap.keySet()) {
 
-                Marker m = mITmap.get(f);
+                //Marker m = mITmap.get(f);
+                ImageBubbleIcon m = mITmap.get(f);
 
-                if ((boolean)m.getTag() != toggleUpdate)
+                if ((boolean)m.mToggleUpdate != toggleUpdate)
                 {
                     deleteList.add(f);
                     //mITmap.remove(f);
-                    m.remove();
+                    mClusterManager.removeItem(m);
+
 
                 }
             }
@@ -491,6 +537,9 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
             {
                 mITmap.remove(f);
             }
+
+            mClusterManager.cluster();
+
 
 
         }
@@ -501,4 +550,66 @@ public class OverviewActivity extends Activity implements OnMapReadyCallback, Go
     public void onLoaderReset(Loader<Cursor> loader) {
 
     }
+
+    @Override
+    public boolean onClusterClick(Cluster<ImageBubbleIcon> cluster) {
+        // Create the builder to collect all essential cluster items for the bounds.
+        LatLngBounds.Builder builder = LatLngBounds.builder();
+        for (ClusterItem item : cluster.getItems()) {
+            builder.include(item.getPosition());
+        }
+        // Get the LatLngBounds
+        final LatLngBounds bounds = builder.build();
+
+        // Animate camera to the bounds
+        try {
+            mGoogleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 100));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return true;
+    }
+
+        @Override
+        public void onClusterInfoWindowClick(Cluster<ImageBubbleIcon> cluster) {
+
+        }
+
+        @Override
+        public boolean onClusterItemClick(ImageBubbleIcon imageBubbleIcon) {
+            return false;
+        }
+
+        @Override
+        public void onClusterItemInfoWindowClick(ImageBubbleIcon imageBubbleIcon) {
+
+        }
+
+    @Override
+    public void onCameraIdle(float cameraRadius)
+    {
+
+        mCameraRadius = cameraRadius;
+
+
+        if (mCurrentLocation != null)
+        {
+            getLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+        }
+
+        //mClusterManager.cluster();
+    }
+
+    @Override
+    public void onMarkerClickListener(Marker marker) {
+
+        if ( marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId()) )
+        {
+            Intent i = new Intent(MainActivity.this, CameraActivity.class);
+            startActivity(i);
+        }
+
+    }
+
 }
