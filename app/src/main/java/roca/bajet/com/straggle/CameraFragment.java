@@ -75,7 +75,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
     @BindView(R.id.gl_surfaceview) public GLSurfaceView mGLSurfaceView;
     @BindView(R.id.debug_textview) public TextView mDebugTextView;
-    @BindView(R.id.take_picture_button) public ImageButton mTakePickButton;
+    @BindView(R.id.take_picture_button) public ImageButton mTakePicButton;
 
     private String debugText;
     public CameraRenderer mCameraRenderer;
@@ -195,10 +195,12 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             FrameLayout preview = (FrameLayout) rootView.findViewById(R.id.camera_preview);
 
             preview.addView(mCameraPreview);
-            preview.removeView(mTakePickButton);
-            preview.addView(mTakePickButton);
+            preview.removeView(mTakePicButton);
+            preview.addView(mTakePicButton);
 
-            mTakePickButton.setOnClickListener(new View.OnClickListener() {
+
+
+            mTakePicButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
 
@@ -357,8 +359,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
     @Override
     public void onResume() {
-        mGoogleApiClient.connect();
-        super.onResume();
+
         mCameraRenderer.startReadingSensor();
 
         if (mCamera == null && checkCameraHardware(mContext)) {
@@ -367,12 +368,17 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             mCameraPreview.mCamera = mCamera;
         }
 
+        super.onResume();
     }
 
     @Override
     public void onPause() {
-        stopLocationUpdates();
-        mGoogleApiClient.disconnect();
+
+        if (mGoogleApiClient.isConnected())
+        {
+            stopLocationUpdates();
+        }
+
 
         super.onPause();
 
@@ -387,8 +393,31 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         }
 
 
+    }
+
+    @Override
+    public void onStart() {
+
+        if (mGoogleApiClient != null) {
+            Log.d(LOG_TAG, "onStart, Google API Client connect");
+            mGoogleApiClient.connect();
+        }
+
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
 
 
+        if (mGoogleApiClient != null) {
+            Log.d(LOG_TAG, "onStop, Google API Client disconnect");
+
+            mGoogleApiClient.disconnect();
+        }
+
+
+        super.onStop();
     }
 
 

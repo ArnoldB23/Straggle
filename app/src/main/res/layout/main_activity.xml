@@ -17,12 +17,14 @@
         android:name="com.google.android.gms.maps.MapFragment"
         android:id="@+id/map_fragment"/>
 
-    <TextView
+    <android.support.v7.widget.RecyclerView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="0.5"
         android:gravity="center|top"
-        android:text="The Awesome Sliding Up Panel"
-        android:textSize="16sp"
-        android:id="@+id/sliding_up_panel"/>
+        android:id="@+id/images_recyclerview">
+
+    </android.support.v7.widget.RecyclerView>
+
 
 </com.sothree.slidinguppanel.SlidingUpPanelLayout>

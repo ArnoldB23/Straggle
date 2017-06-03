@@ -85,7 +85,15 @@ public class ContentProviderStraggle extends ContentProvider {
             case URI_MATCH_IMAGETEXTURES_ID:
                 builder.setTables(TBL_IMAGETEXTURES);
 
-                where = ImageTextures.COL_USER_ID + " = ?";
+                if (selection != null)
+                {
+                    where = ImageTextures.COL_USER_ID + " = ? AND " + selection;
+                }
+                else{
+                    where = ImageTextures.COL_USER_ID + " = ?";
+                }
+
+
                 cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
                 break;
 
