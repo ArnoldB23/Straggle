@@ -1,5 +1,6 @@
 package roca.bajet.com.straggle;
 
+import android.animation.Animator;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -11,6 +12,7 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -26,6 +28,10 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.LinearSnapHelper;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.ViewAnimationUtils;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -70,6 +76,10 @@ import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.util.TextureHelper;
 
+import static roca.bajet.com.straggle.CameraRenderer.getAngleBetweenVectors;
+import static roca.bajet.com.straggle.CameraRenderer.normalizeVector;
+import static roca.bajet.com.straggle.CameraRenderer.quatmultiply;
+
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnCameraMoveStartedListener,
         GoogleMap.OnCameraMoveListener,
         GoogleMap.OnCameraMoveCanceledListener,
@@ -97,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private static final String KEY_LOCATION_SETTINGS_ENTERED = "key_location_settings_entered";
     private static final String KEY_IS_ROTATION_VECTOR = "key_is_rotation_vector";
 
+    private View mCircularRevealView;
     private MapFragment mMapFragment;
     private LinearSnapHelper mLinearSnapHelper;
     private SlidingUpPanelLayout mSlidingUpLayout;
@@ -113,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private LocationRequest mLocationRequest;
     private Location mCurrentLocation = null;
     private Location mPreviousCurrentLocation;
+    private GestureDetector mGestureDetector;
+    private MotionEvent mTapMotionEvent;
     private Marker mCurrentLocationMarker;
     private CameraPosition mInitialCameraPosition = null;
     public HashMap<String, ImageBubbleIcon> mITmap;
@@ -151,6 +164,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mHandler = new Handler();
 
 
+        mCircularRevealView = findViewById(R.id.circular_reveal_view);
+
         String sel = ContentProviderDbSchema.Users.COL_USERNAME + " = 'DEFAULT_USER'";
         Cursor c = getContentResolver().query(ContentProviderDbSchema.Users.CONTENT_URI, null, sel, null, null);
         if (c.moveToFirst()) {
@@ -160,6 +175,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mSlidingUpLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_up_layout);
         mSlidingUpLayout.setAnchorPoint(1);
+
+        mSlidingUpLayout.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                Log.d(LOG_TAG, "onCreate, ontouch...");
+                return false;
+            }
+        });
 
         mRecyclerViewAdapter = new ImageCursorRecyclerViewAdapter(getApplicationContext(), null);
 
@@ -172,7 +195,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_fragment);
+
         mMapFragment.getMapAsync(this);
+
+        if (mMapFragment.getView() == null)
+        {
+            Log.d(LOG_TAG, "onCreate, map fragment view is null!");
+        }else{
+            Log.d(LOG_TAG, "onCreate, map fragment view exists!");
+        }
+
 
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         mRotationVectorSensor = mSensorManager.getDefaultSensor(ROTATIONSENSORTYPE);
@@ -216,6 +248,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .addApi(LocationServices.API)
                     .build();
         }
+    }
+
+    @Override
+    public boolean dispatchTouchEvent (MotionEvent ev)
+    {
+        Log.d(LOG_TAG, "dispatchTouchEvent");
+
+        mGestureDetector.onTouchEvent(ev);
+
+        return super.dispatchTouchEvent(ev);
     }
 
     @Override
@@ -264,6 +306,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mIsRotationVectorEnabled = mSensorManager.registerListener(this, mRotationVectorSensor, 10000);
 
+        mCircularRevealView.setVisibility(View.INVISIBLE);
         if (!mIsRotationVectorEnabled) {
             Log.d(LOG_TAG, "onResume, UNABLE to register RotationVector sensor");
         }
@@ -314,6 +357,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mGoogleMap.setOnMarkerClickListener(mClusterManager);
         mGoogleMap.setOnMyLocationButtonClickListener(this);
 
+
+
+
         mCurrentLocationMarker = mGoogleMap.addMarker(new MarkerOptions()
                 .anchor(0.5f, 0.5f)
                 .position(new LatLng(0, 0))
@@ -342,6 +388,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 }
             }
         }
+
+        mGestureDetector = new GestureDetector(getApplicationContext(), new GestureDetector.SimpleOnGestureListener()
+        {
+            @Override
+            public boolean onSingleTapUp (MotionEvent ev)
+            {
+                Log.d(LOG_TAG, "onSingleTapUp...");
+                mTapMotionEvent = ev;
+                return false;
+            }
+        });
 
         //updateLocationUI();
 
@@ -695,6 +752,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             // is interpreted by Open GL as the inverse of the
             // rotation-vector, which is what we want.
 
+            /*
             float [] rotationMatrix = new float [16];
 
             SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
@@ -705,8 +763,26 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
             mAzimuth = (float)( Math.toDegrees( rotateOrientation[0] ) + 360 ) % 360;
+            */
+
 
             //mSlidingUpPanel.setText("Azimuth: " + mAzimuth);
+
+
+
+            float [] baseAzimuthVector = new float [] {0,0,1,-1}; //w,x,y,z
+            float [] northVector = new float [] {0,0,1,0};
+            float [] h = new float [] {sensorEvent.values[3],sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]};
+            float [] hprime = new float [] {h[0], -h[1], -h[2], -h[3]};
+
+            float [] rotationAzimuthVector = quatmultiply(quatmultiply(h,baseAzimuthVector),hprime);
+            float [] normRotationVector = normalizeVector(rotationAzimuthVector);
+            normRotationVector[3] = 0;
+
+            float angle = getAngleBetweenVectors(northVector, normRotationVector);
+            angle *= Math.signum(rotationAzimuthVector[1]);
+            mAzimuth = (float) ((Math.toDegrees( angle ) + 360 ) % 360);
+
 
             if (mCurrentLocation != null && mGoogleMap != null && mIsRotationVectorEnabled)
             {
@@ -956,10 +1032,52 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMarkerClickListener(Marker marker) {
 
-        if ( mCurrentLocationMarker != null && marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId()) )
+        if ( mCurrentLocationMarker != null && marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId()) && mTapMotionEvent != null )
         {
-            Intent i = new Intent(MainActivity.this, CameraActivity.class);
-            startActivity(i);
+            Log.d(LOG_TAG, "CurrentLocationMarker x = " + mTapMotionEvent.getX() + ", y = " + mTapMotionEvent.getY());
+
+
+
+            float finalRadius = (float) Math.hypot(mTapMotionEvent.getX(), mTapMotionEvent.getY());
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            {
+                Animator anim = ViewAnimationUtils.createCircularReveal(mCircularRevealView, (int)mTapMotionEvent.getX(), (int)mTapMotionEvent.getY()-152, 0, finalRadius);
+                mCircularRevealView.setVisibility(View.VISIBLE);
+                mCircularRevealView.bringToFront();
+
+                anim.addListener(new Animator.AnimatorListener() {
+                    @Override
+                    public void onAnimationStart(Animator animator) {
+
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animator animator) {
+
+                        Log.d(LOG_TAG, "onAnimationEnd...");
+
+
+                        Intent i = new Intent(MainActivity.this, CameraActivity.class);
+                        startActivity(i);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animator) {
+
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animator animator) {
+
+                    }
+                });
+
+                anim.start();
+            }
+
+
+
         }
 
     }

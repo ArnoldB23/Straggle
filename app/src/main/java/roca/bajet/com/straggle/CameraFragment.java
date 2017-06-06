@@ -2,9 +2,7 @@ package roca.bajet.com.straggle;
 
 
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -14,7 +12,6 @@ import android.hardware.Camera;
 import android.location.Location;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -25,16 +22,13 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
-import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -43,9 +37,6 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.HashSet;
 
 import butterknife.BindView;
@@ -53,7 +44,6 @@ import butterknife.ButterKnife;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema.ImageTextures;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.objects.ImageTexture;
-import roca.bajet.com.straggle.util.TextureHelper;
 
 
 /**
@@ -74,7 +64,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     private static final int IMAGESEARCH_LOADER = 0;
 
     @BindView(R.id.gl_surfaceview) public GLSurfaceView mGLSurfaceView;
-    @BindView(R.id.debug_textview) public TextView mDebugTextView;
+    //@BindView(R.id.debug_textview) public TextView mDebugTextView;
     @BindView(R.id.take_picture_button) public ImageButton mTakePicButton;
 
     private String debugText;
@@ -161,7 +151,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                      @Override
                      public void run() {
 
-                         mDebugTextView.setText(fstr);
+                         //mDebugTextView.setText(fstr);
 
                          //Log.d(LOG_TAG, "Debug " + fstr);
                      }
@@ -181,7 +171,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                  String z = String.format("%+3.0f", data[2]);
 
                  String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z;
-                 mDebugTextView.setText(txt);
+                 //mDebugTextView.setText(txt);
 
              }
          }
@@ -203,6 +193,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             mTakePicButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+
+                    /*
 
                     mCamera.takePicture(null, null, new Camera.PictureCallback() {
                         @Override
@@ -292,6 +284,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                             camera.startPreview();
                         }
                     });
+
+                    */
                 }
             });
 
@@ -451,11 +445,15 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         } else {
             // no camera on this device
             return false;
+
+
         }
     }
 
     public void setCameraDisplayOrientation(Activity activity,
                                                    int cameraId, android.hardware.Camera camera) {
+
+
         android.hardware.Camera.CameraInfo info =
                 new android.hardware.Camera.CameraInfo();
         android.hardware.Camera.getCameraInfo(cameraId, info);

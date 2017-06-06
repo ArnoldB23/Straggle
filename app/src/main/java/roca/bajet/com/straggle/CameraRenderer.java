@@ -130,7 +130,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         mTextureShaderProgram = new TextureShaderProgram(mContext);
 
 
-        Location location = new Location(LocationManager.GPS_PROVIDER);
+        //Location location = new Location(LocationManager.GPS_PROVIDER);
 
         //Garage
         //setCoordinates(location, 37.390980, -121.877402);
@@ -391,10 +391,8 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
 
 
-
             float [] rotateOrientation = new float[3];
             SensorManager.getOrientation(rotationMatrix,rotateOrientation);
-
 
 
             float [] quaternion = new float [4];

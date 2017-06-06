@@ -8,7 +8,7 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.9"
+        android:layout_weight="1"
         android:background="@drawable/background_mica"
         android:id="@+id/camera_preview">
 
@@ -20,20 +20,17 @@
         <ImageButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            app:srcCompat="@drawable/full_moon_48"
+
             android:layout_gravity="center_horizontal|bottom"
             android:layout_marginBottom="8dp"
-            android:background="?android:selectableItemBackground"
+            android:background="@drawable/take_pic_button_statelist"
             android:id="@+id/take_picture_button"/>
 
 
     </FrameLayout>
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="0.1"
-        android:id="@+id/debug_textview"/>
+
+
 </LinearLayout>
 
 
