@@ -1,4 +1,4 @@
-package roca.bajet.com.straggle.Map;
+package roca.bajet.com.straggle.map;
 
 import android.content.Context;
 import android.graphics.Bitmap;

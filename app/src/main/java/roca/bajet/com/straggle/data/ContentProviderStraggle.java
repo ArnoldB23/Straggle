@@ -15,7 +15,9 @@ import android.text.TextUtils;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.AUTHORITY;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.ImageTextures;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.PATH_IMAGETEXTURES;
+import static roca.bajet.com.straggle.data.ContentProviderDbSchema.PATH_LOCATION;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.PATH_USERS;
+import static roca.bajet.com.straggle.data.ContentProviderDbSchema.TBL_CURRENT_LOCATION;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.TBL_IMAGETEXTURES;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.TBL_USERS;
 import static roca.bajet.com.straggle.data.ContentProviderDbSchema.Users;
@@ -25,7 +27,7 @@ import static roca.bajet.com.straggle.data.ContentProviderDbSchema.Users;
  */
 
 public class ContentProviderStraggle extends ContentProvider {
-    private static final String LOG_TAG = "ContentProviderMovie";
+    private static final String LOG_TAG = "ContentProviderStraggle";
 
     private static final int URI_MATCH_IMAGETEXTURES = 1;
     private static final int URI_MATCH_IMAGETEXTURES_ID = 2;
@@ -33,6 +35,7 @@ public class ContentProviderStraggle extends ContentProvider {
     private static final int URI_MATCH_USERS = 4;
     private static final int URI_MATCH_USERS_ID = 5;
     private static final int URI_MATCH_USERS_USERNAME = 6;
+    private static final int URI_MATCH_CURRENT_LOCATION = 7;
 
     private static final UriMatcher sUriMatcher;
     private static final SQLiteQueryBuilder sImageTexturesJoinUserQueryBuilder;
@@ -50,6 +53,7 @@ public class ContentProviderStraggle extends ContentProvider {
         sUriMatcher.addURI(AUTHORITY, PATH_USERS, URI_MATCH_USERS);
         sUriMatcher.addURI(AUTHORITY, PATH_USERS + "/#", URI_MATCH_USERS_ID);
         sUriMatcher.addURI(AUTHORITY, PATH_USERS + "/*", URI_MATCH_USERS_USERNAME);
+        sUriMatcher.addURI(AUTHORITY, PATH_LOCATION, URI_MATCH_CURRENT_LOCATION);
 
         sImageTexturesJoinUserQueryBuilder = new SQLiteQueryBuilder();
         sImageTexturesJoinUserQueryBuilder.setTables(sImageTexturesJoinUserStr);
@@ -126,6 +130,15 @@ public class ContentProviderStraggle extends ContentProvider {
                 cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
 
                 break;
+            case URI_MATCH_CURRENT_LOCATION:
+                builder.setTables(TBL_CURRENT_LOCATION);
+
+
+                where = ContentProviderDbSchema.CurrentLocation._ID + " = " + ContentProviderOpenHelper.DEFAULT_CURRENT_LOCATION_ID;
+
+
+                cursor = builder.query(db, projection, where, null, null, null, sortOrder);
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
@@ -152,6 +165,8 @@ public class ContentProviderStraggle extends ContentProvider {
                 return Users.CONTENT_ITEM_TYPE;
             case URI_MATCH_USERS_USERNAME:
                 return Users.CONTENT_ITEM_TYPE;
+            case URI_MATCH_CURRENT_LOCATION:
+                return ContentProviderDbSchema.CurrentLocation.CONTENT_TYPE;
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
@@ -189,6 +204,9 @@ public class ContentProviderStraggle extends ContentProvider {
                 contentValues.put(Users.COL_USERNAME, uri.getLastPathSegment());
                 id = db.insert(TBL_USERS, null, contentValues);
                 break;
+            case URI_MATCH_CURRENT_LOCATION:
+                id = db.insert(TBL_CURRENT_LOCATION, null, contentValues);
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
@@ -212,22 +230,15 @@ public class ContentProviderStraggle extends ContentProvider {
             case URI_MATCH_IMAGETEXTURES:
                 deleteCount = db.delete(TBL_IMAGETEXTURES, selection, selectionArgs);
                 break;
+
             case URI_MATCH_IMAGETEXTURES_ID: {
-                String where = ImageTextures.COL_USER_ID+ " = ?";
-                String[] concateSelectionArgs;
+                String where = ImageTextures.COL_USER_ID + " = '" + uri.getLastPathSegment() + "'";
+
                 if (!TextUtils.isEmpty(selection)) {
                     where += " AND " + selection;
-                    concateSelectionArgs = new String[selectionArgs.length + 1];
-                    concateSelectionArgs[0] = uri.getLastPathSegment();
-                    for (int i = 0; i < concateSelectionArgs.length; i++) {
-                        concateSelectionArgs[i + 1] = selectionArgs[i];
-                    }
-                } else {
-                    concateSelectionArgs = new String[]{uri.getLastPathSegment()};
                 }
 
-
-                deleteCount = db.delete(TBL_IMAGETEXTURES, where, concateSelectionArgs);
+                deleteCount = db.delete(TBL_IMAGETEXTURES, where, selectionArgs);
                 break;
             }
             case URI_MATCH_IMAGETEXTURES_FILENAME: {
@@ -291,6 +302,10 @@ public class ContentProviderStraggle extends ContentProvider {
                 deleteCount = db.delete(TBL_USERS, where ,  concateSelectionArgs);
                 break;
             }
+
+            case URI_MATCH_CURRENT_LOCATION:
+                deleteCount = db.delete(TBL_CURRENT_LOCATION, selection, selectionArgs);
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
@@ -338,6 +353,10 @@ public class ContentProviderStraggle extends ContentProvider {
                 updateCount = db.update(TBL_USERS, contentValues, where, new String [] {uri.getLastPathSegment()});
                 break;
             }
+            case URI_MATCH_CURRENT_LOCATION:
+                String where = ContentProviderDbSchema.CurrentLocation._ID + " = ?";
+                updateCount = db.update(TBL_CURRENT_LOCATION, contentValues, where, new String []{String.valueOf(ContentProviderOpenHelper.DEFAULT_CURRENT_LOCATION_ID)});
+                break;
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }

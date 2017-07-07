@@ -8,10 +8,8 @@ import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationManager;
 import android.opengl.GLSurfaceView;
-import android.os.Environment;
 import android.util.Log;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 
@@ -128,63 +126,6 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         mTextureShaderProgram = new TextureShaderProgram(mContext);
-
-
-        //Location location = new Location(LocationManager.GPS_PROVIDER);
-
-        //Garage
-        //setCoordinates(location, 37.390980, -121.877402);
-
-        //mImageTexture = new ImageTexture(R.drawable.frame1_1, mContext);
-        //mImageTextures.add(new ImageTexture(R.drawable.frame1_1, location, mContext));
-
-
-        File directory = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES), "Straggle");
-        File[] files = directory.listFiles();
-
-        if(files != null)
-        {
-            Log.d("Files", "Size: "+ files.length);
-            for (int i = 0; i < files.length; i++)
-            {
-                Log.d("Files", "FileName: " + files[i].getName());
-                //mImageTextures.add(new ImageTexture(files[i].getAbsolutePath(), TextureHelper.getImageTextureLocation(mContext,files[i].getAbsolutePath()),mContext ));
-
-            }
-        }
-
-
-        /*
-        //Parent's bedroom
-        location = new Location(LocationManager.GPS_PROVIDER);
-        setCoordinates(location, 37.390817, -121.877254);
-        mImageTextures.add(new ImageTexture(R.drawable.frame2_3, location, mContext));
-
-        //Kitchen
-        location = new Location(LocationManager.GPS_PROVIDER);
-        setCoordinates(location, 37.390880, -121.8771781);
-        mImageTextures.add(new ImageTexture(R.drawable.frame3_4, location, mContext));
-
-
-        //My room
-        location = new Location(LocationManager.GPS_PROVIDER);
-        setCoordinates(location, 37.390839, -121.877212);
-        mImageTextures.add(new ImageTexture(R.drawable.frame3_5, location, mContext));
-        //mImageTextures.add(new ImageTexture(R.drawable.frame4_5, mContext));
-        //mImageTextures.add(new ImageTexture(R.drawable.frame9_16, mContext));
-        */
-        /*
-        float rotate = 0f;
-        for(ImageTexture it : mImageTextures) {
-
-            it.mCameraRotationAngle = (rotate * 60 + it.mCameraRotationAngle) - 180;
-            rotate++;
-
-            Random r = new Random();
-            it.moveFromToCamera(-r.nextFloat()*6 + it.mTranslationValuesXYZ[2]);
-        }
-        */
 
 
         Log.d(LOG_TAG, "onSurfaceCreated end");

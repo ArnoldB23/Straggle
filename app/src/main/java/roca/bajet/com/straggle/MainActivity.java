@@ -1,10 +1,13 @@
 package roca.bajet.com.straggle;
 
+import android.Manifest;
 import android.animation.Animator;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -23,17 +26,25 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.ActionMode;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.LinearSnapHelper;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.GestureDetector;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewAnimationUtils;
 
 import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException;
+import com.google.android.gms.common.GooglePlayServicesRepairableException;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.common.api.ResultCallback;
@@ -48,6 +59,9 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResult;
 import com.google.android.gms.location.LocationSettingsStates;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.places.Place;
+import com.google.android.gms.location.places.Places;
+import com.google.android.gms.location.places.ui.PlaceAutocomplete;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -65,25 +79,31 @@ import com.google.maps.android.clustering.ClusterManager;
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Random;
 
-import roca.bajet.com.straggle.Map.ImageBubbleIcon;
-import roca.bajet.com.straggle.Map.ImageBubbleIconRenderer;
-import roca.bajet.com.straggle.Map.LocationCheckDialog;
-import roca.bajet.com.straggle.Map.OverviewClusterManager;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
+import roca.bajet.com.straggle.dialog.LocationCheckDialog;
+import roca.bajet.com.straggle.map.ImageBubbleIcon;
+import roca.bajet.com.straggle.map.ImageBubbleIconRenderer;
+import roca.bajet.com.straggle.map.OverviewClusterManager;
 import roca.bajet.com.straggle.util.TextureHelper;
 
 import static roca.bajet.com.straggle.CameraRenderer.getAngleBetweenVectors;
 import static roca.bajet.com.straggle.CameraRenderer.normalizeVector;
 import static roca.bajet.com.straggle.CameraRenderer.quatmultiply;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleMap.OnCameraMoveStartedListener,
+public class MainActivity extends AppCompatActivity implements
+        OnMapReadyCallback,
+        GoogleMap.OnCameraMoveStartedListener,
         GoogleMap.OnCameraMoveListener,
         GoogleMap.OnCameraMoveCanceledListener,
-        GoogleMap.OnCameraIdleListener,
         GoogleMap.OnMapClickListener,
         GoogleMap.OnMyLocationButtonClickListener,
         GoogleApiClient.ConnectionCallbacks,
@@ -99,18 +119,16 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final String KEY_CAMERA_POSITION = "key_camera_position";
     private static final String KEY_LOCATION = "key_location";
-    private static final String KEY_LOCATION_MARKER_VISIBLE = "key_location_marker_visible";
-    private static final String KEY_LOCATION_MARKER_ROTATION = "key_location_marker_rotation";
-    private static final String KEY_TOGGLE_UPDATE = "key_toggle_update";
-    private static final String KEY_REQUESTING_LOCATION_UPDATES = "key_requesting_location_updates";
-    private static final String KEY_LOCATION_PERMISSION_GRANTED = "key_location_permission_granted";
-    private static final String KEY_LOCATION_SETTINGS_ENTERED = "key_location_settings_entered";
-    private static final String KEY_IS_ROTATION_VECTOR = "key_is_rotation_vector";
+    public static final String EXTRA_IMAGE_LOCATION = "extra_image_location";
+    public static final String EXTRA_IMAGE_FILENAME = "extra_image_filename";
+
+    private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 1;
 
     private View mCircularRevealView;
     private MapFragment mMapFragment;
     private LinearSnapHelper mLinearSnapHelper;
     private SlidingUpPanelLayout mSlidingUpLayout;
+    private Toolbar mToolbar;
     private RecyclerView mRecyclerView;
     private ImageCursorRecyclerViewAdapter mRecyclerViewAdapter;
     private GoogleMap mGoogleMap;
@@ -122,26 +140,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private float mAzimuth;
     private GoogleApiClient mGoogleApiClient;
     private LocationRequest mLocationRequest;
+    private String mWidgetItemFilename;
     private Location mCurrentLocation = null;
-    private Location mPreviousCurrentLocation;
+    private Location mWidgetCameraLocation;
     private GestureDetector mGestureDetector;
     private MotionEvent mTapMotionEvent;
     private Marker mCurrentLocationMarker;
+    private Marker mAddNewPhotoMarker;
     private CameraPosition mInitialCameraPosition = null;
     public HashMap<String, ImageBubbleIcon> mITmap;
+
     private OverviewClusterManager<ImageBubbleIcon> mClusterManager;
     private static final int LOCATION_REQUEST_INTERVAL = 10000;
     private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
     private boolean isConfigurationChange;
 
-    private static final int PERMISSION_REQUEST_FINE_LOCATION = 36;
+    private static final int LOCATION_PERMISSION_REQUEST_CODE = 36;
+    private static final int READ_STORAGE_PERMISSION_REQUEST_CODE = 47;
+    private static final int NEEDED_PERMISSION_REQUEST_CODE = 99;
+
     private final String LOG_TAG = MainActivity.class.getSimpleName();
     private static final int IMAGESEARCH_LOADER = 0;
     private static final String[] IMAGESEARCH_COLUMNS = {
             ContentProviderDbSchema.ImageTextures._ID,
             ContentProviderDbSchema.ImageTextures.COL_FILENAME,
             ContentProviderDbSchema.ImageTextures.COL_LAT,
-            ContentProviderDbSchema.ImageTextures.COL_LON
+            ContentProviderDbSchema.ImageTextures.COL_LON,
+            ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO
     };
 
     private LocationCheckDialog mLocationCheckDialog;
@@ -151,9 +176,78 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private boolean mLocationPermissionGranted = true;
     private boolean mLocationSettingsEntered = false;
     private boolean mIsRotationVectorEnabled = false;
+    private boolean mIsStoragePermissionGranted = false;
+    private boolean mDoneRequestingAllPermissions = false;
+    private ActionMode mAddMenuActionMode;
+    private CameraPosition mCurrentCameraPosition;
+
+    private Intent mIntent;
+    private String mAction;
+    private String mType;
+    private ActionBar mActionBar;
+
 
     public Handler mHandler;
-    PendingResult<LocationSettingsResult> mLocationSettingsResultPendingResult;
+    private PendingResult<LocationSettingsResult> mLocationSettingsResultPendingResult;
+
+    private ActionMode.Callback mAddMenuActionModeCallback = new ActionMode.Callback() {
+
+        // Called when the mAction mode is created; startActionMode() was called
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            // Inflate a menu resource providing context menu items
+            MenuInflater inflater = mode.getMenuInflater();
+            inflater.inflate(R.menu.main_add_new_menu, menu);
+
+
+            return true;
+        }
+
+        // Called each time the mAction mode is shown. Always called after onCreateActionMode, but
+        // may be called multiple times if the mode is invalidated.
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false; // Return false if nothing is done
+        }
+
+        // Called when the user selects a contextual menu item
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.action_ok:
+
+                    if (Intent.ACTION_SEND.equals(mAction) && mType != null) {
+
+                        if (mType.startsWith("image/")) {
+                            handleSendImage(mIntent); // Handle single image being sent
+                        }
+                    } else if (Intent.ACTION_SEND_MULTIPLE.equals(mAction) && mType != null) {
+                        if (mType.startsWith("image/")) {
+                            handleSendMultipleImages(mIntent); // Handle multiple images being sent
+                        }
+                    }
+
+                    mode.finish(); // Action picked, so close the CAB
+                    return true;
+
+                case R.id.home:
+                    mode.finish();
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Called when the user exits the mAction mode
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            mAddMenuActionMode = null;
+
+
+            mAddNewPhotoMarker.remove();
+            mAddNewPhotoMarker = null;
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -174,23 +268,42 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
 
         mSlidingUpLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_up_layout);
-        mSlidingUpLayout.setAnchorPoint(1);
+        //mSlidingUpLayout.setAnchorPoint(1);
 
-        mSlidingUpLayout.setOnTouchListener(new View.OnTouchListener() {
+
+        mSlidingUpLayout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                Log.d(LOG_TAG, "onCreate, ontouch...");
+            public boolean onLongClick(View view) {
+
+                Log.d(LOG_TAG, "mSlidingUpLayout onLongClick");
                 return false;
             }
         });
 
-        mRecyclerViewAdapter = new ImageCursorRecyclerViewAdapter(getApplicationContext(), null);
+        mSlidingUpLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d(LOG_TAG, "mSlidingUpLayout onClick");
+            }
+        });
+
+
+
+
+
+
+        mToolbar = (Toolbar) findViewById(R.id.main_toolbar);
+        setSupportActionBar(mToolbar);
+        mActionBar = getSupportActionBar();
+
+        mRecyclerViewAdapter = new ImageCursorRecyclerViewAdapter(this, null);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.images_recyclerview);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.HORIZONTAL, false));
 
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
         mLinearSnapHelper = new LinearSnapHelper();
+
         mLinearSnapHelper.attachToRecyclerView(mRecyclerView);
 
 
@@ -212,6 +325,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mITmap = new HashMap<>();
 
         mLocationCheckDialog = new LocationCheckDialog();
+
         mLocationCheckDialog.setOnLocationCheckDialogCallback(new LocationCheckDialog.LocationCheckDialogCallback() {
             @Override
             public void onPositiveButton() {
@@ -230,14 +344,27 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         if (savedInstanceState != null) {
+            Log.d(LOG_TAG, "onCreate, savedInstanceState != null");
 
             mInitialCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
 
             isConfigurationChange = true;
 
+            mRecyclerViewAdapter.onRestoreInstanceState(savedInstanceState);
+
             mCurrentLocation = savedInstanceState.getParcelable(KEY_LOCATION);
 
         }
+
+        mIntent = getIntent();
+        mAction = mIntent.getAction();
+        mType = mIntent.getType();
+
+
+
+
+
+        //WidgetLocationService.createPeriodicLocationTask(getApplicationContext());
 
         // Create an instance of GoogleAPIClient.
         if (mGoogleApiClient == null) {
@@ -246,14 +373,97 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .addConnectionCallbacks(this)
                     .addOnConnectionFailedListener(this)
                     .addApi(LocationServices.API)
+                    .addApi(Places.GEO_DATA_API)
+                    .addApi(Places.PLACE_DETECTION_API)
+                    .enableAutoManage(this, this)
                     .build();
+        }
+
+
+        //TextureHelper.restoreContentProviderDataState(getApplicationContext());
+    }
+
+    @Override
+    public void onNewIntent (Intent intent)
+    {
+        Log.d(LOG_TAG, "onNewIntent");
+
+        mIntent = intent;
+        mAction = intent.getAction();
+        mType = intent.getType();
+
+        if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
+                && mAddMenuActionMode == null) {
+
+
+
+            mRecyclerViewAdapter.closeContextActionMenu();
+            mAddMenuActionMode = startSupportActionMode(mAddMenuActionModeCallback);
+
+            mCurrentCameraPosition = mGoogleMap.getCameraPosition();
+            mAddNewPhotoMarker = mGoogleMap.addMarker(new MarkerOptions()
+                    .anchor(0.5f, 1f)
+                    .zIndex(1.0f)
+                    .position(new LatLng(mCurrentCameraPosition.target.latitude, mCurrentCameraPosition.target.longitude))
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
+                    .draggable(true)
+                    .visible(true)
+                    .flat(true));
+
+            if (Intent.ACTION_SEND.equals(mAction))
+            {
+                mAddMenuActionMode.setTitle(R.string.menu_add_photo_title);
+            }
+            else{
+                mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
+            }
+
+        }
+    }
+
+
+    // Menu icons are inflated just as they were with actionbar
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the mAction bar if it is present.
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_search:
+
+                try {
+                    Intent intent =
+                            new PlaceAutocomplete.IntentBuilder(PlaceAutocomplete.MODE_FULLSCREEN)
+                                    .build(this);
+
+                    startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
+                } catch (GooglePlayServicesRepairableException e) {
+                    // TODO: Handle the error.
+                } catch (GooglePlayServicesNotAvailableException e) {
+                    // TODO: Handle the error.
+                }
+
+
+                return true;
+
+
+
+            default:
+                // If we got here, the user's mAction was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
         }
     }
 
     @Override
     public boolean dispatchTouchEvent (MotionEvent ev)
     {
-        Log.d(LOG_TAG, "dispatchTouchEvent");
+        //Log.d(LOG_TAG, "dispatchTouchEvent");
 
         mGestureDetector.onTouchEvent(ev);
 
@@ -282,7 +492,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onStop() {
-
+        Log.d(LOG_TAG, "onStop");
 
         if (mGoogleApiClient != null) {
             Log.d(LOG_TAG, "onStop, Google API Client disconnect");
@@ -294,7 +504,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         mLocationSettingsEntered = false;
         mLocationPermissionGranted = true;
+        mIsStoragePermissionGranted = false;
+        mCurrentCameraPosition = null;
 
+        mDoneRequestingAllPermissions = false;
 
         super.onStop();
     }
@@ -326,7 +539,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Log.d(LOG_TAG, "onPause, unregister RotationVector sensor");
 
+        //TextureHelper.saveContentProviderDataState(getApplicationContext());
         mSensorManager.unregisterListener(this);
+        mWidgetCameraLocation = null;
+
 
         if (mGoogleApiClient.isConnected()) {
             stopLocationUpdates();
@@ -345,6 +561,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mGoogleMap.setOnCameraMoveStartedListener(this);
         mGoogleMap.setOnCameraMoveListener(this);
         mGoogleMap.setOnCameraMoveCanceledListener(this);
+        mGoogleMap.setOnMapClickListener(this);
 
 
 
@@ -352,12 +569,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mClusterManager.setOnClusterManagerCallback(this);
         mClusterManager.setRenderer(new ImageBubbleIconRenderer(getApplicationContext(), mGoogleMap, mClusterManager));
         mClusterManager.setOnClusterClickListener(this);
+        mClusterManager.setOnClusterItemClickListener(this);
 
         mGoogleMap.setOnCameraIdleListener(mClusterManager);
         mGoogleMap.setOnMarkerClickListener(mClusterManager);
         mGoogleMap.setOnMyLocationButtonClickListener(this);
-
-
 
 
         mCurrentLocationMarker = mGoogleMap.addMarker(new MarkerOptions()
@@ -368,26 +584,52 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 .visible(false)
                 .flat(true));
 
-        if (isConfigurationChange == false) {
-            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
-                if (mCurrentLocation != null)
-                {
-                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()), 16f);
-                    mGoogleMap.moveCamera(cameraUpdate);
-                }
-            }
 
-        }
-        else{
+        if (isConfigurationChange)
+        {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 if (mCurrentLocation != null) {
                     CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()), 16f);
                     mGoogleMap.moveCamera(cameraUpdate);
                 }
             }
+
+
         }
+        else if (!isConfigurationChange && getIntent().hasExtra(EXTRA_IMAGE_FILENAME) && getIntent().hasExtra(EXTRA_IMAGE_LOCATION)){
+
+
+            mWidgetCameraLocation = getIntent().getExtras().getParcelable(EXTRA_IMAGE_LOCATION);
+            mWidgetItemFilename = getIntent().getExtras().getString(EXTRA_IMAGE_FILENAME);
+
+            Log.d(LOG_TAG,"onMapReady, imageLocation " + String.format("%3.7f",mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f",mWidgetCameraLocation.getLongitude()));
+            Log.d(LOG_TAG, "onMapReady, filename: " + mWidgetItemFilename);
+
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mWidgetCameraLocation.getLatitude(), mWidgetCameraLocation.getLongitude()), 16f);
+            mGoogleMap.moveCamera(cameraUpdate);
+
+            mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.ANCHORED);
+
+
+
+        }
+
+        else if (!isConfigurationChange && getIntent().getExtras() == null)
+        {
+            if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+
+
+                if (mCurrentLocation != null)
+                {
+                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()), 16f);
+                    mGoogleMap.moveCamera(cameraUpdate);
+                }
+
+            }
+        }
+
 
         mGestureDetector = new GestureDetector(getApplicationContext(), new GestureDetector.SimpleOnGestureListener()
         {
@@ -396,13 +638,52 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             {
                 Log.d(LOG_TAG, "onSingleTapUp...");
                 mTapMotionEvent = ev;
-                return false;
+                return super.onSingleTapUp(ev);
             }
+
+            @Override
+            public void onLongPress(MotionEvent ev)
+            {
+                Log.d(LOG_TAG, "onLongPress...");
+                super.onLongPress(ev);
+            }
+
+
         });
+
+        if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
+                && mAddMenuActionMode == null) {
+
+
+
+            mRecyclerViewAdapter.closeContextActionMenu();
+            mAddMenuActionMode = startSupportActionMode(mAddMenuActionModeCallback);
+
+            mCurrentCameraPosition = mGoogleMap.getCameraPosition();
+            mAddNewPhotoMarker = mGoogleMap.addMarker(new MarkerOptions()
+                    .anchor(0.5f, 1f)
+                    .zIndex(1.0f)
+                    .visible(true)
+                    .position(new LatLng(mCurrentCameraPosition.target.latitude, mCurrentCameraPosition.target.longitude))
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
+                    .draggable(true)
+                    .flat(true));
+
+            if (Intent.ACTION_SEND.equals(mAction))
+            {
+                mAddMenuActionMode.setTitle(R.string.menu_add_photo_title);
+            }
+            else{
+                mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
+            }
+
+        }
 
         //updateLocationUI();
 
     }
+
+
 
     private void updateLocationUI() {
         if (mGoogleMap == null) {
@@ -414,7 +695,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * device. The result of the permission request is handled by a callback,
      * onRequestPermissionsResult.
      */
-        if (ContextCompat.checkSelfPermission(this.getApplicationContext(),
+        if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
             mLocationPermissionGranted = true;
@@ -425,22 +706,305 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         } else {
             Log.d(LOG_TAG, "updateLocationUI, location permission NOT granted!");
 
+
             mGoogleMap.setMyLocationEnabled(false);
             mGoogleMap.getUiSettings().setMyLocationButtonEnabled(false);
             mCurrentLocation = null;
 
             mCurrentLocationMarker.setVisible(false);
 
+            mLocationPermissionGranted = false; //todo:
+            /*
             if (mLocationPermissionGranted)
             {
                 ActivityCompat.requestPermissions(this,
                         new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                        PERMISSION_REQUEST_FINE_LOCATION);
+                        LOCATION_PERMISSION_REQUEST_CODE);
+            }
+
+            */
+
+        }
+
+
+    }
+
+
+    public void resolveAllNeededPermissions()
+    {
+        ArrayList<String> permissionList = new ArrayList<>();
+
+        Log.d(LOG_TAG, "resolveNeededPermissions");
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_DENIED) {
+
+            permissionList.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+        else{
+            mLocationPermissionGranted = true;
+            Log.d(LOG_TAG, "resolveNeededPermissions, location permission granted!");
+        }
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_DENIED) {
+
+            permissionList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        }
+        else{
+            mIsStoragePermissionGranted = true;
+            Log.d(LOG_TAG, "resolveNeededPermissions, storage permission granted!");
+        }
+
+        if ( ! mIsStoragePermissionGranted || ! mLocationPermissionGranted)
+        {
+            Log.d(LOG_TAG, "resolveNeededPermissions, permission(s) required");
+
+            if (!mDoneRequestingAllPermissions && !permissionList.isEmpty())
+            {
+
+
+                ActivityCompat.requestPermissions(this,
+                        permissionList.toArray(new String [permissionList.size()]),
+                        NEEDED_PERMISSION_REQUEST_CODE);
+
+                mDoneRequestingAllPermissions = true;
             }
 
         }
 
 
+
+
+    }
+
+    public boolean resolveStoragePermission(){
+
+        Log.d(LOG_TAG, "resolveStoragePermission");
+
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
+        {
+            Log.d(LOG_TAG, "resolveStoragePermission, storage permission granted!");
+            mIsStoragePermissionGranted = true;
+            return true;
+        }
+        else{
+
+            Log.d(LOG_TAG, "resolveStoragePermission, storage permission NOT granted!");
+
+
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        READ_STORAGE_PERMISSION_REQUEST_CODE);
+
+
+
+
+            return false;
+        }
+
+    }
+
+    void handleSendImage(Intent intent) {
+        final Uri imageUri = (Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM);
+        final double lat = mAddNewPhotoMarker.getPosition().latitude;
+        final double lon = mAddNewPhotoMarker.getPosition().longitude;
+
+        if (imageUri != null) {
+            // Update UI to reflect image being shared
+
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    //File file = new File(Uri.parse(imageUri));
+
+                    File newPictureFile = TextureHelper.getOutputMediaFile(TextureHelper.MEDIA_TYPE_IMAGE);
+
+                    final int chunkSize = 1024;  // We'll read in one kB at a time
+                    byte[] imageData = new byte[chunkSize];
+
+                    InputStream in = null;
+                    OutputStream out = null;
+
+                    try {
+                        in = getContentResolver().openInputStream(imageUri);
+                        out = new FileOutputStream(newPictureFile);  // I'm assuming you already have the File object for where you're writing to
+
+                        int bytesRead;
+                        while ((bytesRead = in.read(imageData)) > 0) {
+                            out.write(Arrays.copyOfRange(imageData, 0, Math.max(0, bytesRead)));
+                        }
+
+                        if (in != null)
+                        {
+                            in.close();
+                        }
+
+                        if (out != null)
+                        {
+                            out.close();
+                        }
+
+
+
+                        Random randomAngle = new Random();
+                        BitmapFactory.Options options = new BitmapFactory.Options();
+                        options.inJustDecodeBounds = true;
+                        BitmapFactory.decodeFile(newPictureFile.getAbsolutePath(), options);
+                        int aspect_ratio = TextureHelper.getBestAspectRatio(options);
+
+
+                        ContentValues cv = new ContentValues();
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_FILENAME, newPictureFile.getName());
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_LAT, lat);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_LON, lon);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, randomAngle.nextInt(360));
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
+                        Uri imageTexturesUri = ContentProviderDbSchema.ImageTextures.CONTENT_URI;
+                        getContentResolver().insert(imageTexturesUri,cv);
+
+                        mHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+                            }
+                        });
+
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                            Intent mediaScanIntent = new Intent(
+                                    Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                            Uri contentUri = Uri.fromFile(newPictureFile);
+                            mediaScanIntent.setData(contentUri);
+                            sendBroadcast(mediaScanIntent);
+                        } else {
+                            sendBroadcast(new Intent(
+                                    Intent.ACTION_MEDIA_MOUNTED,
+                                    Uri.parse("file://"
+                                            + Environment.getExternalStorageDirectory())));
+                        }
+
+                    } catch (Exception ex) {
+                        Log.e("handleSendImage", ex.toString());
+                        if (newPictureFile != null & newPictureFile.exists())
+                        {
+                            newPictureFile.delete();
+                        }
+                    }
+
+                }
+            }).start();
+
+
+
+            Log.d(LOG_TAG, "handleSendImage, uri: " + imageUri);
+        }
+    }
+
+    void handleSendMultipleImages(Intent intent) {
+        final ArrayList<Uri> imageUris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+        final double lat = mAddNewPhotoMarker.getPosition().latitude;
+        final double lon = mAddNewPhotoMarker.getPosition().longitude;
+        if (imageUris != null) {
+            // Update UI to reflect multiple images being shared
+
+
+                new Thread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        //File file = new File(Uri.parse(imageUri));
+
+                        int angleInc = 360/imageUris.size();
+                        int currentAngle = 0;
+
+                        for (Uri imageUri : imageUris)
+                        {
+
+                            File newPictureFile = TextureHelper.getOutputMediaFile(TextureHelper.MEDIA_TYPE_IMAGE);
+
+                            final int chunkSize = 1024;  // We'll read in one kB at a time
+                            byte[] imageData = new byte[chunkSize];
+
+                            InputStream in = null;
+                            OutputStream out = null;
+
+                            try {
+                                in = getContentResolver().openInputStream(imageUri);
+                                out = new FileOutputStream(newPictureFile);  // I'm assuming you already have the File object for where you're writing to
+
+                                int bytesRead;
+                                while ((bytesRead = in.read(imageData)) > 0) {
+                                    out.write(Arrays.copyOfRange(imageData, 0, Math.max(0, bytesRead)));
+                                }
+
+                                if (in != null)
+                                {
+                                    in.close();
+                                }
+
+                                if (out != null)
+                                {
+                                    out.close();
+                                }
+
+
+                                BitmapFactory.Options options = new BitmapFactory.Options();
+                                options.inJustDecodeBounds = true;
+                                BitmapFactory.decodeFile(newPictureFile.getAbsolutePath(), options);
+                                int aspect_ratio = TextureHelper.getBestAspectRatio(options);
+
+
+                                ContentValues cv = new ContentValues();
+                                cv.put(ContentProviderDbSchema.ImageTextures.COL_FILENAME, newPictureFile.getName());
+                                cv.put(ContentProviderDbSchema.ImageTextures.COL_LAT, lat);
+                                cv.put(ContentProviderDbSchema.ImageTextures.COL_LON, lon);
+                                cv.put(ContentProviderDbSchema.ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
+                                cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, currentAngle);
+                                cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
+                                Uri imageTexturesUri = ContentProviderDbSchema.ImageTextures.CONTENT_URI;
+                                getContentResolver().insert(imageTexturesUri,cv);
+
+                                currentAngle += angleInc;
+
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                                    Intent mediaScanIntent = new Intent(
+                                            Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                                    Uri contentUri = Uri.fromFile(newPictureFile);
+                                    mediaScanIntent.setData(contentUri);
+                                    sendBroadcast(mediaScanIntent);
+                                } else {
+                                    sendBroadcast(new Intent(
+                                            Intent.ACTION_MEDIA_MOUNTED,
+                                            Uri.parse("file://"
+                                                    + Environment.getExternalStorageDirectory())));
+                                }
+
+                                mHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+                                    }
+                                });
+
+
+                            } catch (Exception ex) {
+                                Log.e("handleSendImage", ex.toString());
+                                if (newPictureFile != null & newPictureFile.exists())
+                                {
+                                    newPictureFile.delete();
+                                }
+                            }
+
+                            Log.d(LOG_TAG, "handleSendMultipleImages, uri: " + imageUri);
+                        }
+
+                    }
+                }).start();
+
+
+        }
     }
 
     @Override
@@ -450,7 +1014,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
 
         switch (requestCode) {
-            case PERMISSION_REQUEST_FINE_LOCATION: {
+            case LOCATION_PERMISSION_REQUEST_CODE:
                 // If request is cancelled, the mLocationSettingsResultPendingResult arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -462,7 +1026,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     Log.d(LOG_TAG, "onRequestPermissionsResult, location permission granted!");
                     updateLocationUI();
 
-                } else {
+                } else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED){
                     Log.d(LOG_TAG, "onRequestPermissionsResult, location permission NOT granted!");
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
@@ -471,24 +1035,77 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     mCurrentLocationMarker.setVisible(false);
                 }
 
+                break;
 
-            }
+
+            case READ_STORAGE_PERMISSION_REQUEST_CODE:
+
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+                {
+                    Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted granted!");
+                    mIsStoragePermissionGranted = true;
+                    //todo:
+                }
+                else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED)
+                {
+                    Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted NOT granted!");
+                    mIsStoragePermissionGranted = false;
+                }
+                break;
+
+
+            case NEEDED_PERMISSION_REQUEST_CODE:
+
+                if (grantResults.length < 1)
+                {
+                    break;
+                }
+
+                for (int i = 0; i < permissions.length; i++)
+                {
+                    if (permissions[i] == android.Manifest.permission.ACCESS_FINE_LOCATION
+                            && grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                        // permission was granted, yay! Do the
+                        // contacts-related task you need to do.
+
+                        mLocationPermissionGranted = true;
+
+                        Log.d(LOG_TAG, "onRequestPermissionsResult, location permission granted!");
+                        updateLocationUI();
+
+                    }
+
+                    else if (permissions[i] == android.Manifest.permission.ACCESS_FINE_LOCATION
+                            && grantResults[i] == PackageManager.PERMISSION_DENIED){
+                        mLocationPermissionGranted = false;
+                        mCurrentLocation = null;
+                        mCurrentLocationMarker.setVisible(false);
+                        Log.d(LOG_TAG, "onRequestPermissionsResult, location permission denied!");
+                    }
+
+                    if (permissions[i] == Manifest.permission.READ_EXTERNAL_STORAGE
+                            && grantResults[i] == PackageManager.PERMISSION_GRANTED){
+
+                        Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted granted!");
+                        mIsStoragePermissionGranted = true;
+                    }
+
+                    else if (permissions[i] == Manifest.permission.READ_EXTERNAL_STORAGE
+                            && grantResults[i] == PackageManager.PERMISSION_DENIED){
+                        Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted denied!");
+                        mIsStoragePermissionGranted = false;
+                    }
+
+                }
+
+
+                break;
+
+
 
         }
     }
 
-    @Override
-    public void onCameraIdle() {
-
-        Log.d(LOG_TAG, "onCameraIdle...");
-        float zoom = mGoogleMap.getCameraPosition().zoom;
-        double d = 87601515 * Math.pow(0.50269686, zoom);
-
-        mCameraRadius = (float) d / 2;
-
-        getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
-
-    }
 
     @Override
     public void onCameraMoveCanceled() {
@@ -501,14 +1118,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     }
 
     @Override
-    public void onCameraMoveStarted(int i) {
+    public void onCameraMoveStarted(int reason) {
+        Log.d(LOG_TAG, "onCameraMoveStarted...");
+
+        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE)
+        {
+            mRecyclerViewAdapter.closeContextActionMenu();
+        }
 
     }
 
     @Override
     public void onMapClick(LatLng latLng) {
 
+        Log.d(LOG_TAG, "onMapClick...");
 
+        if(mAddMenuActionMode != null)
+        {
+            mAddNewPhotoMarker.setPosition(latLng);
+        }
     }
 
 
@@ -525,6 +1153,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onConnected(@Nullable Bundle bundle) {
 
         Log.d(LOG_TAG, "onConnected...");
+
 
 
 
@@ -557,6 +1186,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             //outState.putBoolean(KEY_LOCATION_MARKER_VISIBLE, mCurrentLocationMarker.isVisible());
             //outState.putFloat(KEY_LOCATION_MARKER_ROTATION, mCurrentLocationMarker.getRotation());
 
+            mRecyclerViewAdapter.onSaveInstanceState(outState);
 
             super.onSaveInstanceState(outState);
         }
@@ -576,14 +1206,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public void onLocationChanged(Location location) {
 
 
-        if (mCurrentLocation == null && mGoogleMap != null) {
+        if (mCurrentLocation == null && mGoogleMap != null && mWidgetCameraLocation == null) {
 
-            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 16f);
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 16f);
             mGoogleMap.moveCamera(cameraUpdate);
+
+            if (mAddMenuActionMode != null && mAddNewPhotoMarker != null)
+            {
+                mAddNewPhotoMarker.setPosition(latLng);
+            }
 
         }
 
-        mPreviousCurrentLocation = mCurrentLocation;
 
 
         mCurrentLocation = location;
@@ -608,14 +1243,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     protected void startLocationUpdates() {
         Log.d(LOG_TAG, "startLocationUpdates...");
+
+        resolveAllNeededPermissions();
+
         updateLocationUI();
 
-        if (!mLocationPermissionGranted)
-        {
-            Log.d(LOG_TAG, "startLocationUpdates, Location permission NOT granted!");
-
-            return;
-        }
 
         mLocationCallback = new LocationCallback() {
             @Override
@@ -705,17 +1337,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         };
 
+
+
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
             Log.d(LOG_TAG, "startLocationUpdates, requested Location Updates!");
 
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, mLocationCallback, mHandler.getLooper());
-
             LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+
+        }
+
+
+        //resolveStoragePermission();
+
+        if (!mIsStoragePermissionGranted)
+        {
+            Log.d(LOG_TAG, "startLocationUpdates, Storage permission NOT granted!");
             return;
         }
 
-        Log.d(LOG_TAG, "startLocationUpdates, UNABLE to request Location Updates!");
+        getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER,null,this);
+
 
 
     }
@@ -725,10 +1368,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Log.d(LOG_TAG, "onActivityResult...");
 
+        if (requestCode == PLACE_AUTOCOMPLETE_REQUEST_CODE) {
+            if (resultCode == RESULT_OK) {
+                Place place = PlaceAutocomplete.getPlace(this, data);
+                Log.i(LOG_TAG, "Place: " + place.getName());
+
+                // Animate camera to the bounds
+                try {
+                    mGoogleMap.animateCamera(CameraUpdateFactory.newLatLng(place.getLatLng()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
+                Status status = PlaceAutocomplete.getStatus(this, data);
+                // TODO: Handle the error.
+                Log.i(LOG_TAG, status.getStatusMessage());
+
+            } else if (resultCode == RESULT_CANCELED) {
+                // The user canceled the operation.
+            }
+        }
 
     }
-
-
 
 
     protected void stopLocationUpdates() {
@@ -801,7 +1462,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         CursorLoader cursorLoader = null;
 
-        if (id == IMAGESEARCH_LOADER)
+        if (id == IMAGESEARCH_LOADER && mIsStoragePermissionGranted)
         {
 
 
@@ -874,8 +1535,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
         mRecyclerViewAdapter.swapCursor(data);
 
-        if (loader.getId() == IMAGESEARCH_LOADER)
+        if (loader.getId() == IMAGESEARCH_LOADER && mIsStoragePermissionGranted)
         {
+            if ( data.getCount() == 0)
+            {
+                mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+            }
+
 
 
 
@@ -884,6 +1550,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             toggleUpdate = !toggleUpdate;
 
+            if (mWidgetCameraLocation != null)
+            {
+                int position = mRecyclerViewAdapter.getPositionFromFilename(mWidgetItemFilename);
+
+                if (position > -1)
+                {
+                    mRecyclerView.getLayoutManager().scrollToPosition(position);
+                }
+            }
+
+            data.moveToPosition(-1);
+
             while(data.moveToNext())
             {
                 //Log.d(LOG_TAG, "")
@@ -891,8 +1569,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 lon = data.getDouble(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LON));
 
                 Location.distanceBetween(currentLat, currentLon, lat, lon, distance);
-
-
 
                 if (distance[0] > mCameraRadius)
                 {
@@ -908,7 +1584,15 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 filename = data.getString(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
                 final File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
 
-
+                /*
+                Uri uri = ContentProviderDbSchema.ImageTextures.CONTENT_URI;
+                ContentValues cv = new ContentValues(1);
+                int viewType = mRecyclerViewAdapter.getItemViewType(data.getPosition());
+                cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, viewType);
+                String where = ContentProviderDbSchema.ImageTextures.COL_FILENAME + " = ?";
+                String [] whereArgs = new String [] {filename};
+                getContentResolver().update(uri, cv, where, whereArgs);
+                */
 
 
                 if (!mITmap.containsKey(filename))
@@ -917,14 +1601,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                     LatLng latlng = new LatLng(lat, lon);
 
-                    /*
-                    Marker newImageIcon = mGoogleMap.addMarker(new MarkerOptions()
-                    .position(latlng)
-                    .icon(BitmapDescriptorFactory.fromBitmap(TextureHelper.getCircleClip(bp)))
-                    .flat(true)
-                    .anchor(0.5f, 0.5f));
-
-                    */
 
                     ImageBubbleIcon newImageIcon = new ImageBubbleIcon(latlng,TextureHelper.getSquareClip(bp));
 
@@ -996,6 +1672,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             e.printStackTrace();
         }
 
+
+
+
+        mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.ANCHORED);
+
         return true;
     }
 
@@ -1006,6 +1687,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public boolean onClusterItemClick(ImageBubbleIcon imageBubbleIcon) {
+
+        mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.ANCHORED);
+
         return false;
     }
 
@@ -1019,12 +1703,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     {
 
 
+        mCurrentCameraPosition = mGoogleMap.getCameraPosition();
 
         mCameraRadius = cameraRadius;
 
         Log.d(LOG_TAG, "onCameraIdle, mCameraRadius : " + mCameraRadius);
 
-        getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+        if (mIsStoragePermissionGranted)
+        {
+            getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+        }
+
+
 
         //mClusterManager.cluster();
     }
@@ -1032,9 +1722,14 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMarkerClickListener(Marker marker) {
 
-        if ( mCurrentLocationMarker != null && marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId()) && mTapMotionEvent != null )
+        if ( mCurrentLocationMarker != null
+                && marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId())
+                && mTapMotionEvent != null
+                && mAddMenuActionMode == null
+                && !mRecyclerViewAdapter.isContextActionMenu())
         {
             Log.d(LOG_TAG, "CurrentLocationMarker x = " + mTapMotionEvent.getX() + ", y = " + mTapMotionEvent.getY());
+
 
 
 

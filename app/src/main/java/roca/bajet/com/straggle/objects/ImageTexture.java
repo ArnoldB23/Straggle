@@ -82,7 +82,9 @@ public class ImageTexture {
         DisplayMetrics displaymetrics = new DisplayMetrics();
         ((Activity) c).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
 
+
         Bitmap bitmap = TextureHelper.decodeSampledBitmapFromFile(filestr, displaymetrics.widthPixels, displaymetrics.heightPixels);
+
         mTextureId = TextureHelper.loadTexture(c, bitmap);
 
         //mTranslationValuesXYZ = new Float [] {0f, -1.9f, -2f};

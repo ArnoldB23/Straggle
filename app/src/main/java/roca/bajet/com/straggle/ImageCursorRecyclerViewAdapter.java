@@ -1,19 +1,37 @@
 package roca.bajet.com.straggle;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
+import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
-import android.support.v7.widget.RecyclerView;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.view.ActionMode;
+import android.support.v7.widget.CardView;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
-import com.squareup.picasso.Picasso;
+import com.bignerdranch.android.multiselector.ModalMultiSelectorCallback;
+import com.bignerdranch.android.multiselector.MultiSelector;
+import com.bignerdranch.android.multiselector.SwappingHolder;
+import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
+import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
+import roca.bajet.com.straggle.util.TextureHelper;
 
 /**
  * Created by Arnold on 5/12/2017.
@@ -21,8 +39,175 @@ import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 
 public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<ImageCursorRecyclerViewAdapter.ViewHolder> {
 
-    public Context mContext;
-    File mediaStorageDir;
+    private Context mContext;
+    private File mediaStorageDir;
+    private boolean toggleSelectAll = false;
+    private HashMap<Long, String> mFileNameListId = new HashMap<>();
+    public ActionMode mActionMode;
+
+    public static final String TOGGLE_SELECT_ALL_KEY = "TOGGLE_SELECT_ALL_KEY";
+    public static final String FILE_NAME_LIST_ID_KEY = "FILE_NAME_LIST_ID_KEY";
+    public static final String SELECTABLE_MODE_KEY = "SELECTABLE_MODE_KEY";
+
+    public static final int INVALID_VIEW_TYPE = -1;
+    public static final int LANDSCAPE_VIEW_TYPE = 0;
+    public static final int PORTRAIT_VIEW_TYPE = 1;
+    public static final String LOG_TAG = "ImageCursorAdapter";
+
+
+    private MultiSelector mMultiSelector = new MultiSelector();
+    private ModalMultiSelectorCallback mActionModeCallback
+            = new ModalMultiSelectorCallback(mMultiSelector) {
+
+        private final String LOG_TAG = "mActionModeCallback";
+        private Long DEFAULT_USER_ID = ContentProviderOpenHelper.DEFAULT_USER_ID;
+
+
+        @Override
+        public boolean onCreateActionMode(ActionMode actionMode, Menu menu) {
+            super.onCreateActionMode(actionMode, menu);
+            actionMode.getMenuInflater().inflate(R.menu.main_context_menu, menu);
+
+            mActionMode = actionMode;
+
+            return true;
+        }
+
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu)
+        {
+            return super.onPrepareActionMode(mode,menu);
+        }
+
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+
+
+
+            switch (item.getItemId())
+            {
+                case R.id.action_select_all:
+
+                    toggleSelectAll = !toggleSelectAll;
+
+                    if (toggleSelectAll)
+                    {
+                        mCursor.moveToPosition(-1);
+                        while (mCursor.moveToNext())
+                        {
+                            Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
+                            String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+
+                            mMultiSelector.setSelected(mCursor.getPosition(), id, true);
+                            mFileNameListId.put(id, filename);
+                        }
+
+                        item.setIcon(mContext.getDrawable(R.drawable.cancel_icon_48));
+
+                        Log.d(LOG_TAG, "Action Select All, count: " + mMultiSelector.getSelectedPositions().size());
+                    }
+                    else{
+
+                        mFileNameListId.clear();
+                        mMultiSelector.clearSelections();
+                        item.setIcon(mContext.getDrawable(R.drawable.select_all_icon_48));
+
+                    }
+
+
+                    return true;
+
+                case R.id.action_share_pictures:
+
+                    Log.d(LOG_TAG, "Action Share, count: " + mMultiSelector.getSelectedPositions().size());
+
+                    if (mFileNameListId.size() == 1)
+                    {
+                        Set<Map.Entry<Long, String>> setSentry = mFileNameListId.entrySet();
+                        Map.Entry<Long, String> singleEntry = setSentry.iterator().next();
+
+                        Intent shareIntent = new Intent();
+
+                        String filename = singleEntry.getValue();
+                        File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+                        shareIntent.setAction(Intent.ACTION_SEND);
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(mediaFile));
+                        shareIntent.setType("image/*");
+                        mContext.startActivity(Intent.createChooser(shareIntent, mContext.getResources().getText(R.string.send_to_single)));
+                    }
+                    else if (mFileNameListId.size() > 1)
+                    {
+                        ArrayList<Uri> imageUris = new ArrayList<>();
+
+
+                        for (Map.Entry<Long, String> entry : mFileNameListId.entrySet())
+                        {
+                            String filename = entry.getValue();
+                            File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+
+                            imageUris.add(Uri.fromFile(mediaFile));
+                        }
+
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+                        shareIntent.setType("image/*");
+                        shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, imageUris);
+
+                        mContext.startActivity(Intent.createChooser(shareIntent, mContext.getResources().getText(R.string.send_to_multiple)));
+                    }
+
+                    mode.finish();
+                    mMultiSelector.clearSelections();
+                    mFileNameListId.clear();
+
+                    return true;
+
+                case R.id.action_delete:
+
+                    for (Integer position : mMultiSelector.getSelectedPositions())
+                    {
+
+                        mCursor.moveToPosition(position);
+                        Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
+                        String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+                        File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+                        mediaFile.delete();
+
+
+                        Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
+                        String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
+                        String selectionArgs [] = {String.valueOf(id)};
+                        int deleted = mContext.getContentResolver().delete(deleteIdUri, where, selectionArgs);
+
+                        Log.d(LOG_TAG, "Action Delete, deleting position: " + position + ", success: " + deleted);
+
+
+
+                        notifyItemChanged(position);
+                    }
+
+                    Log.d(LOG_TAG, "Action Delete, count: " + mMultiSelector.getSelectedPositions().size());
+
+                    mode.finish();
+                    mMultiSelector.clearSelections();
+                    mFileNameListId.clear();
+
+                    return true;
+            }
+
+            return false;
+        }
+
+        @Override
+        public void onDestroyActionMode(ActionMode mode)
+        {
+            super.onDestroyActionMode(mode);
+
+            mMultiSelector.clearSelections();
+            mFileNameListId.clear();
+
+            notifyDataSetChanged();
+        }
+    };
 
     public ImageCursorRecyclerViewAdapter(Context context, Cursor cursor) {
         super(context, cursor);
@@ -38,6 +223,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         View itemView = LayoutInflater.from(mContext).inflate(R.layout.list_image_item, parent, false);
         ViewHolder vh = new ViewHolder(itemView);
 
+
         return vh;
     }
 
@@ -52,19 +238,198 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         //Bitmap bp = TextureHelper.decodeSampledBitmapFromFile(mediaFile.getAbsolutePath(), 300, 300);
         //viewHolder.mImageView.setImageBitmap(bp);
 
-        Picasso.with(mContext).load(mediaFile.getAbsoluteFile()).into(viewHolder.mImageView);
+        viewHolder.filename = filename;
+        viewHolder.id = data.getLong(data.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
+
+        viewHolder.aspect_ratio = data.getInt(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO));
+
+
+
+        if (viewHolder.aspect_ratio <= TextureHelper.ARATIO_9X16)
+        {
+            viewHolder.mImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            //Picasso.with(mContext).load(mediaFile).into(viewHolder.mImageView);
+
+            Glide.with(mContext).load(mediaFile).into(viewHolder.mImageView)
+                    .onLoadFailed(mContext.getDrawable(R.drawable.placeholder));
+        }
+        else
+        {
+            viewHolder.mImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            //Picasso.with(mContext).load(mediaFile).into(viewHolder.mImageView);
+            Glide.with(mContext).load(mediaFile).into(viewHolder.mImageView)
+                    .onLoadFailed(mContext.getDrawable(R.drawable.placeholder));
+        }
+
 
 
     }
+    @Override
+    public int getItemViewType(int position) {
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
+        if (mCursor.moveToPosition(position))
+        {
+            String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+            File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile( mediaFile.getAbsolutePath(), options);
+
+
+            int aratioNum = TextureHelper.getBestAspectRatio(options);
+
+            return aratioNum;
+
+            /*
+
+            if ( aratioNum <= TextureHelper.ARATIO_9X16)
+            {
+                return PORTRAIT_VIEW_TYPE;
+            }
+            else{
+                return LANDSCAPE_VIEW_TYPE;
+            }
+
+            */
+        }
+        else{
+            return INVALID_VIEW_TYPE;
+        }
+
+    }
+
+
+
+
+
+    public void onSaveInstanceState(Bundle outstate)
+    {
+        outstate.putSerializable(FILE_NAME_LIST_ID_KEY, mFileNameListId);
+        outstate.putBoolean(TOGGLE_SELECT_ALL_KEY, toggleSelectAll);
+        Bundle multiSelState = mMultiSelector.saveSelectionStates();
+        outstate.putAll(multiSelState);
+    }
+
+    public void onRestoreInstanceState(Bundle savedInstanceState){
+        toggleSelectAll = savedInstanceState.getBoolean(TOGGLE_SELECT_ALL_KEY);
+
+        mMultiSelector.restoreSelectionStates(savedInstanceState);
+
+        if (mMultiSelector.isSelectable())
+        {
+            ((AppCompatActivity) mContext).startSupportActionMode(mActionModeCallback);
+        }
+        mMultiSelector.restoreSelectionStates(savedInstanceState);
+
+
+        mFileNameListId = (HashMap<Long, String>) savedInstanceState.getSerializable(FILE_NAME_LIST_ID_KEY);
+
+    }
+
+    public void closeContextActionMenu()
+    {
+        mMultiSelector.clearSelections();
+        mFileNameListId.clear();
+        notifyDataSetChanged();
+
+        if (mMultiSelector.isSelectable())
+        {
+            mActionMode.finish();
+        }
+
+    }
+
+    public boolean isContextActionMenu()
+    {
+        if (mActionModeCallback != null)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
+    public class ViewHolder extends SwappingHolder implements View.OnLongClickListener, View.OnClickListener{
+
+        private final String LOG_TAG = "ViewHolder";
 
         public ImageView mImageView;
+        public int aspect_ratio;
+        public Long id;
+        public String filename;
+        public ImageView mSelectedCheckImageView;
 
         public ViewHolder(View view) {
-            super(view);
+            super(view, mMultiSelector);
+
+            view.setLongClickable(true);
+            view.setClickable(true);
+
+            view.setOnClickListener(this);
+            view.setOnLongClickListener(this);
 
             mImageView = (ImageView) view.findViewById(R.id.item_imageview);
+
+            //mSelectedCheckImageView = (ImageView) view.findViewById(R.id.selected_check_imageview);
+            //mSelectedCheckImageView.setVisibility(View.INVISIBLE);
         }
+
+
+        @Override
+        public boolean onLongClick(View view) {
+
+            Log.d(LOG_TAG, "onLongClick");
+
+            if (!mMultiSelector.isSelectable()) {
+
+                Log.d(LOG_TAG, "onLongClick, entering Context Action mode and adding id:" + id);
+
+                ((AppCompatActivity) mContext).startSupportActionMode(mActionModeCallback);
+                mMultiSelector.setSelectable(true);
+                mMultiSelector.setSelected(ViewHolder.this, true);
+
+
+
+
+                mFileNameListId.put(id, filename);
+
+                //mSelectedCheckImageView.setVisibility(View.VISIBLE);
+                //mCardView.setForeground(mContext.getResources().getDrawable(R.color.colorSelectItem));
+
+
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void onClick(View view) {
+            Log.d(LOG_TAG, "onClick");
+
+            if (mMultiSelector.tapSelection(ViewHolder.this)){
+
+                if (mMultiSelector.isSelected(getAdapterPosition(), id))
+                {
+                    Log.d(LOG_TAG, "onClick, selected id: " + id);
+                    mFileNameListId.put(id, filename);
+                    //mSelectedCheckImageView.setVisibility(View.VISIBLE);
+
+                }
+                else{
+                    Log.d(LOG_TAG, "onClick, unselected id: " + id);
+                    mFileNameListId.remove(id);
+                    //mSelectedCheckImageView.setVisibility(View.INVISIBLE);
+                }
+            }
+            //Not in selectable mode
+            else{
+                Log.d(LOG_TAG, "onClick, normal mode");
+
+            }
+
+        }
+
     }
 }

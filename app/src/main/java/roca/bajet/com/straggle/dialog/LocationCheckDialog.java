@@ -1,4 +1,4 @@
-package roca.bajet.com.straggle.Map;
+package roca.bajet.com.straggle.dialog;
 
 import android.app.Dialog;
 import android.content.DialogInterface;

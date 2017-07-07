@@ -5,6 +5,8 @@ import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.support.v7.widget.RecyclerView;
 
+import roca.bajet.com.straggle.data.ContentProviderDbSchema;
+
 /**
  * Created by sam_chordas on 10/6/15.
  *  Credit to skyfishjy gist:
@@ -13,8 +15,8 @@ import android.support.v7.widget.RecyclerView;
  */
 public abstract class CursorRecyclerViewAdapter <VH extends RecyclerView.ViewHolder> extends RecyclerView.Adapter<VH>{
   private static final String LOG_TAG = CursorRecyclerViewAdapter.class.getSimpleName();
-  private Cursor mCursor;
-  private boolean dataIsValid;
+  public  Cursor mCursor;
+  public boolean dataIsValid;
   private int rowIdColumn;
   private DataSetObserver mDataSetObserver;
   public CursorRecyclerViewAdapter(Context context, Cursor cursor){
@@ -64,6 +66,7 @@ public abstract class CursorRecyclerViewAdapter <VH extends RecyclerView.ViewHol
     onBindViewHolder(viewHolder, mCursor);
   }
 
+
   public Cursor swapCursor(Cursor newCursor){
     if (newCursor == mCursor){
       return null;
@@ -86,6 +89,31 @@ public abstract class CursorRecyclerViewAdapter <VH extends RecyclerView.ViewHol
       notifyDataSetChanged();
     }
     return oldCursor;
+  }
+
+  public int getPositionFromFilename(String filename)
+  {
+    int position = -1;
+
+    if (dataIsValid && mCursor != null){
+
+      mCursor.moveToPosition(-1);
+
+      String cursorFilename;
+
+      while(mCursor.moveToNext())
+      {
+        cursorFilename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+
+        if (filename.equals(cursorFilename))
+        {
+          return mCursor.getPosition();
+        }
+      }
+
+    }
+
+    return position;
   }
 
   private class NotifyingDataSetObserver extends DataSetObserver{

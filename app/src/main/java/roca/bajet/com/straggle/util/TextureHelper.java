@@ -4,9 +4,12 @@ package roca.bajet.com.straggle.util;
  * Created by Arnold on 2/8/2017.
  */
 
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Resources;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -18,15 +21,26 @@ import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Random;
+
+import roca.bajet.com.straggle.data.ContentProviderDbSchema;
+import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 
 import static android.opengl.GLES20.GL_LINEAR;
 import static android.opengl.GLES20.GL_LINEAR_MIPMAP_LINEAR;
@@ -45,20 +59,20 @@ import static android.opengl.GLUtils.texImage2D;
 public class TextureHelper {
     private static final String TAG = "TextureHelper";
 
-    public static final int ARATIO_1X1 = 11;
-    public static final int ARATIO_2X3 = 23;
-    public static final int ARATIO_3X5 = 35;
-    public static final int ARATIO_3X4 = 34;
-    public static final int ARATIO_4X5 = 45;
-    public static final int ARATIO_5X7 = 57;
-    public static final int ARATIO_9X16 = 916;
+    public static final int ARATIO_1X1 = 1011;
+    public static final int ARATIO_2X3 = 1022;
+    public static final int ARATIO_3X5 = 1035;
+    public static final int ARATIO_3X4 = 1034;
+    public static final int ARATIO_4X5 = 1045;
+    public static final int ARATIO_5X7 = 1057;
+    public static final int ARATIO_9X16 = 1916;
 
-    public static final int ARATIO_3X2 = 32;
-    public static final int ARATIO_5X3 = 53;
-    public static final int ARATIO_4X3 = 43;
-    public static final int ARATIO_5X4 = 54;
-    public static final int ARATIO_7X5 = 75;
-    public static final int ARATIO_16X9 = 169;
+    public static final int ARATIO_3X2 = 2032;
+    public static final int ARATIO_5X3 = 2053;
+    public static final int ARATIO_4X3 = 2043;
+    public static final int ARATIO_5X4 = 2054;
+    public static final int ARATIO_7X5 = 2075;
+    public static final int ARATIO_16X9 = 2169;
     private static final String IMAGETEXTURE_LOC = "IMAGETEXTURE_LOC";
 
 
@@ -675,18 +689,149 @@ public class TextureHelper {
 
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+
+        byte[] array = new byte[7]; // length is bounded by 7
+        new Random().nextBytes(array);
+        String generatedString = new String(array, Charset.forName("UTF-8"));
+
+
         File mediaFile;
         if (type == MEDIA_TYPE_IMAGE){
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + ".jpg");
+                    "IMG_"+ timeStamp + "_" +generatedString + ".jpg");
         } else if(type == MEDIA_TYPE_VIDEO) {
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_"+ timeStamp + ".mp4");
+                    "VID_"+ timeStamp + "_" +generatedString + ".mp4");
         } else {
             return null;
         }
 
         return mediaFile;
+    }
+
+
+    public static void saveContentProviderDataState (final Context c)
+    {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+
+                File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES), "Straggle");
+
+                File mediaFile = new File(mediaStorageDir.getPath() + File.separator + "contentprovider_db_list" + ".txt");
+
+
+                try {
+                    if (mediaFile.exists())
+                    {
+                        mediaFile.delete();
+                    }
+
+                    PrintWriter pWriter = new PrintWriter(mediaFile);
+
+
+                    Cursor cursor = c.getContentResolver().query(ContentProviderDbSchema.ImageTextures.CONTENT_URI, null, null, null, null);
+
+                    while (cursor.moveToNext())
+                    {
+
+                        String imageFileName = cursor.getString(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+                        String lon = String.valueOf(cursor.getDouble(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LON)));
+                        String lat = String.valueOf(cursor.getDouble(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LAT)));
+                        String angle = String.valueOf(cursor.getDouble(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_ANGLE)));
+                        String aspectRatio = String.valueOf(cursor.getInt(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO)));
+                        String line = imageFileName + "," + lon + "," + lat + "," + angle + "," + aspectRatio;
+
+                        //Log.d("saveContentProvider", line);
+
+                        pWriter.println(line);
+
+                        if (pWriter.checkError())
+                        {
+                            Log.d("saveContentProvider", " Error writing line!");
+                        }
+                    }
+
+                    cursor.close();
+                    pWriter.close();
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        Intent mediaScanIntent = new Intent(
+                                Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        Uri contentUri = Uri.fromFile(mediaFile);
+                        mediaScanIntent.setData(contentUri);
+                        c.sendBroadcast(mediaScanIntent);
+                    } else {
+                        c.sendBroadcast(new Intent(
+                                Intent.ACTION_MEDIA_MOUNTED,
+                                Uri.parse("file://"
+                                        + Environment.getExternalStorageDirectory())));
+                    }
+
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+
+
+
+
+            }
+        }).start();
+
+    }
+
+    public static void restoreContentProviderDataState (final Context c)
+    {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+
+                c.getContentResolver().delete(ContentProviderDbSchema.ImageTextures.CONTENT_URI, null, null);
+
+                File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(
+                        Environment.DIRECTORY_PICTURES), "Straggle");
+
+                File mediaFile = new File(mediaStorageDir.getPath() + File.separator + "contentprovider_db_list" + ".txt");
+
+                try {
+
+                    String currentLine;
+
+                    BufferedReader br = new BufferedReader(new FileReader(mediaFile));
+
+                    while ((currentLine = br.readLine()) != null) {
+
+                        //Log.d("restoreContentProvider", currentLine);
+
+                        String[] tokens = currentLine.split(",");
+
+                        Log.d("restoreContentProvider", tokens[0] + " " + tokens[1] + " " + tokens[2] + " " + tokens[3] + " " + tokens[4] );
+
+                        ContentValues cv = new ContentValues();
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_FILENAME, tokens[0]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_LON, tokens[1]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_LAT, tokens[2]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE,tokens[3]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO,tokens[4]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
+
+                        c.getContentResolver().insert(ContentProviderDbSchema.ImageTextures.CONTENT_URI, cv);
+                    }
+
+                } catch (FileNotFoundException e) {
+
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+
+            }
+        }).start();
+
     }
 
     public static void setImageTextureLocation (Context c, String fileStr, Location loc)

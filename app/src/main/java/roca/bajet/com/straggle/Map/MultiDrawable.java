@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package roca.bajet.com.straggle.Map;
+package roca.bajet.com.straggle.map;
 
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
