@@ -70,6 +70,17 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
             mActionMode = actionMode;
 
+            MenuItem selectAllItem = menu.findItem(R.id.action_select_all);
+            if (toggleSelectAll)
+            {
+
+                selectAllItem.setIcon(mContext.getDrawable(R.drawable.cancel_icon_48));
+            }
+            else{
+
+                selectAllItem.setIcon(mContext.getDrawable(R.drawable.select_all_icon_48));
+            }
+
             return true;
         }
 
@@ -206,6 +217,8 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
             mFileNameListId.clear();
 
             notifyDataSetChanged();
+
+            toggleSelectAll = false;
         }
     };
 
@@ -314,6 +327,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     public void onRestoreInstanceState(Bundle savedInstanceState){
         toggleSelectAll = savedInstanceState.getBoolean(TOGGLE_SELECT_ALL_KEY);
 
+
         mMultiSelector.restoreSelectionStates(savedInstanceState);
 
         if (mMultiSelector.isSelectable())
@@ -342,7 +356,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
     public boolean isContextActionMenu()
     {
-        if (mActionModeCallback != null)
+        if (mMultiSelector.isSelectable())
         {
             return true;
         }

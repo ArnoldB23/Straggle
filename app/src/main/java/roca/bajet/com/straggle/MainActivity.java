@@ -119,6 +119,9 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final String KEY_CAMERA_POSITION = "key_camera_position";
     private static final String KEY_LOCATION = "key_location";
+    private static final String KEY_IMAGE_FILENAME = "key_image_filename";
+    private static final String KEY_PANEL_STATE = "key_panel_state";
+    private static final String KEY_ADD_MARKER = "key_add_marker";
     public static final String EXTRA_IMAGE_LOCATION = "extra_image_location";
     public static final String EXTRA_IMAGE_FILENAME = "extra_image_filename";
 
@@ -178,8 +181,16 @@ public class MainActivity extends AppCompatActivity implements
     private boolean mIsRotationVectorEnabled = false;
     private boolean mIsStoragePermissionGranted = false;
     private boolean mDoneRequestingAllPermissions = false;
+
+
     private ActionMode mAddMenuActionMode;
     private CameraPosition mCurrentCameraPosition;
+    private String mRestoreCurrentFilename;
+    private SlidingUpPanelLayout.PanelState mRestorePanelState;
+    private SlidingUpPanelLayout.PanelState mPanelState;
+    private LatLng mRestoreAddMarkerLatLng;
+
+
 
     private Intent mIntent;
     private String mAction;
@@ -270,6 +281,17 @@ public class MainActivity extends AppCompatActivity implements
         mSlidingUpLayout = (SlidingUpPanelLayout) findViewById(R.id.sliding_up_layout);
         //mSlidingUpLayout.setAnchorPoint(1);
 
+        mSlidingUpLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
+            @Override
+            public void onPanelSlide(View panel, float slideOffset) {
+                
+            }
+
+            @Override
+            public void onPanelStateChanged(View panel, SlidingUpPanelLayout.PanelState previousState, SlidingUpPanelLayout.PanelState newState) {
+                mPanelState = newState;
+            }
+        });
 
         mSlidingUpLayout.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
@@ -346,13 +368,25 @@ public class MainActivity extends AppCompatActivity implements
         if (savedInstanceState != null) {
             Log.d(LOG_TAG, "onCreate, savedInstanceState != null");
 
-            mInitialCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
+            mCurrentCameraPosition = savedInstanceState.getParcelable(KEY_CAMERA_POSITION);
 
             isConfigurationChange = true;
 
             mRecyclerViewAdapter.onRestoreInstanceState(savedInstanceState);
 
             mCurrentLocation = savedInstanceState.getParcelable(KEY_LOCATION);
+
+            mRestoreCurrentFilename = savedInstanceState.getString(KEY_IMAGE_FILENAME);
+
+            mRestorePanelState=(SlidingUpPanelLayout.PanelState)savedInstanceState.getSerializable(KEY_PANEL_STATE);
+            Log.d(LOG_TAG, "onCreate, savedInstanceState != null, panelState = " + mRestorePanelState);
+            if (mRestorePanelState != null && mRestorePanelState != SlidingUpPanelLayout.PanelState.DRAGGING)
+            {
+                mSlidingUpLayout.setPanelState(mRestorePanelState);
+            }
+
+            mRestoreAddMarkerLatLng = savedInstanceState.getParcelable(KEY_ADD_MARKER);
+
 
         }
 
@@ -395,7 +429,7 @@ public class MainActivity extends AppCompatActivity implements
         if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
                 && mAddMenuActionMode == null) {
 
-
+            Log.d(LOG_TAG, "onNewIntent. add menu action mode");
 
             mRecyclerViewAdapter.closeContextActionMenu();
             mAddMenuActionMode = startSupportActionMode(mAddMenuActionModeCallback);
@@ -418,6 +452,22 @@ public class MainActivity extends AppCompatActivity implements
                 mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
             }
 
+        }
+
+        else if (intent.hasExtra(EXTRA_IMAGE_FILENAME) && intent.hasExtra(EXTRA_IMAGE_LOCATION)){
+
+
+            mWidgetCameraLocation = intent.getExtras().getParcelable(EXTRA_IMAGE_LOCATION);
+            mWidgetItemFilename = intent.getExtras().getString(EXTRA_IMAGE_FILENAME);
+
+            Log.d(LOG_TAG,"onNewIntent, imageLocation " + String.format("%3.7f",mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f",mWidgetCameraLocation.getLongitude()));
+            Log.d(LOG_TAG, "onNewIntent, filename: " + mWidgetItemFilename);
+
+            CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mWidgetCameraLocation.getLatitude(), mWidgetCameraLocation.getLongitude()), 16f);
+            mGoogleMap.moveCamera(cameraUpdate);
+
+
+            mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.ANCHORED);
         }
     }
 
@@ -505,7 +555,8 @@ public class MainActivity extends AppCompatActivity implements
         mLocationSettingsEntered = false;
         mLocationPermissionGranted = true;
         mIsStoragePermissionGranted = false;
-        mCurrentCameraPosition = null;
+
+        isConfigurationChange = false;
 
         mDoneRequestingAllPermissions = false;
 
@@ -590,18 +641,21 @@ public class MainActivity extends AppCompatActivity implements
         {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 if (mCurrentLocation != null) {
-                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()), 16f);
+
+                    CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mCurrentCameraPosition.target.latitude, mCurrentCameraPosition.target.longitude), 16f);
                     mGoogleMap.moveCamera(cameraUpdate);
+
+
                 }
             }
 
 
         }
-        else if (!isConfigurationChange && getIntent().hasExtra(EXTRA_IMAGE_FILENAME) && getIntent().hasExtra(EXTRA_IMAGE_LOCATION)){
+        else if (!isConfigurationChange && mIntent.hasExtra(EXTRA_IMAGE_FILENAME) && mIntent.hasExtra(EXTRA_IMAGE_LOCATION)){
 
 
-            mWidgetCameraLocation = getIntent().getExtras().getParcelable(EXTRA_IMAGE_LOCATION);
-            mWidgetItemFilename = getIntent().getExtras().getString(EXTRA_IMAGE_FILENAME);
+            mWidgetCameraLocation = mIntent.getExtras().getParcelable(EXTRA_IMAGE_LOCATION);
+            mWidgetItemFilename = mIntent.getExtras().getString(EXTRA_IMAGE_FILENAME);
 
             Log.d(LOG_TAG,"onMapReady, imageLocation " + String.format("%3.7f",mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f",mWidgetCameraLocation.getLongitude()));
             Log.d(LOG_TAG, "onMapReady, filename: " + mWidgetItemFilename);
@@ -615,7 +669,7 @@ public class MainActivity extends AppCompatActivity implements
 
         }
 
-        else if (!isConfigurationChange && getIntent().getExtras() == null)
+        else if (!isConfigurationChange && mIntent.getExtras() == null)
         {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
@@ -652,9 +706,9 @@ public class MainActivity extends AppCompatActivity implements
         });
 
         if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
-                && mAddMenuActionMode == null) {
+                && mAddMenuActionMode == null && !isConfigurationChange) {
 
-
+            Log.d(LOG_TAG, "onMapReady. add menu action mode");
 
             mRecyclerViewAdapter.closeContextActionMenu();
             mAddMenuActionMode = startSupportActionMode(mAddMenuActionModeCallback);
@@ -665,6 +719,32 @@ public class MainActivity extends AppCompatActivity implements
                     .zIndex(1.0f)
                     .visible(true)
                     .position(new LatLng(mCurrentCameraPosition.target.latitude, mCurrentCameraPosition.target.longitude))
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
+                    .draggable(true)
+                    .flat(true));
+
+            if (Intent.ACTION_SEND.equals(mAction))
+            {
+                mAddMenuActionMode.setTitle(R.string.menu_add_photo_title);
+            }
+            else{
+                mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
+            }
+
+        }
+
+        else if ( mRestoreAddMarkerLatLng != null && isConfigurationChange )
+        {
+            Log.d(LOG_TAG, "onMapReady. Add menu action mode and Configuration Change");
+
+            mRecyclerViewAdapter.closeContextActionMenu();
+            mAddMenuActionMode = startSupportActionMode(mAddMenuActionModeCallback);
+
+            mAddNewPhotoMarker = mGoogleMap.addMarker(new MarkerOptions()
+                    .anchor(0.5f, 1f)
+                    .zIndex(1.0f)
+                    .visible(true)
+                    .position(new LatLng(mRestoreAddMarkerLatLng.latitude, mRestoreAddMarkerLatLng.longitude))
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
                     .draggable(true)
                     .flat(true));
@@ -1114,7 +1194,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onCameraMove() {
-
+        Log.d(LOG_TAG, "onCameraMove...");
     }
 
     @Override
@@ -1169,7 +1249,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onSaveInstanceState(Bundle outState) {
-
+        Log.d(LOG_TAG, "onSaveInstanceState");
         /*
         private static final String KEY_LOCATION_MARKER_VISIBLE =  "key_location_marker_visible";
         private static final String KEY_LOCATION_MARKER_ROTATION = "key_location_marker_rotation";
@@ -1183,6 +1263,31 @@ public class MainActivity extends AppCompatActivity implements
         if (mGoogleMap != null) {
             outState.putParcelable(KEY_CAMERA_POSITION, mGoogleMap.getCameraPosition());
             outState.putParcelable(KEY_LOCATION, mCurrentLocation);
+
+            if (mRecyclerViewAdapter.getCursor() != null && mRecyclerViewAdapter.getCursor().getCount() > 0)
+            {
+                int position = ((LinearLayoutManager) mRecyclerView.getLayoutManager()).findLastCompletelyVisibleItemPosition();
+                mRecyclerViewAdapter.getCursor().moveToPosition(position);
+                String filename = mRecyclerViewAdapter.getCursor().getString(mRecyclerViewAdapter.getCursor().getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+
+                outState.putString(KEY_IMAGE_FILENAME, filename);
+            }
+
+
+
+            if (mAddNewPhotoMarker != null)
+            {
+                outState.putParcelable(KEY_ADD_MARKER, mAddNewPhotoMarker.getPosition());
+            }
+
+            if (mSlidingUpLayout.getPanelState() == null)
+            {
+                outState.putSerializable(KEY_PANEL_STATE, mPanelState);
+            }
+            else{
+                outState.putSerializable(KEY_PANEL_STATE, mSlidingUpLayout.getPanelState());
+            }
+
             //outState.putBoolean(KEY_LOCATION_MARKER_VISIBLE, mCurrentLocationMarker.isVisible());
             //outState.putFloat(KEY_LOCATION_MARKER_ROTATION, mCurrentLocationMarker.getRotation());
 
@@ -1357,10 +1462,10 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER,null,this);
+        //getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER,null,this);
 
 
-
+        getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER,null,this);
     }
 
     @Override
@@ -1553,11 +1658,36 @@ public class MainActivity extends AppCompatActivity implements
             if (mWidgetCameraLocation != null)
             {
                 int position = mRecyclerViewAdapter.getPositionFromFilename(mWidgetItemFilename);
-
+                Log.d(LOG_TAG, "onLoadFinished: mWidgetCameraLocation exists and item position is " + position);
                 if (position > -1)
                 {
                     mRecyclerView.getLayoutManager().scrollToPosition(position);
                 }
+            }
+
+            else if (isConfigurationChange)
+            {
+
+                if (mRestoreCurrentFilename != null)
+                {Log.d(LOG_TAG, "onLoadFinished: mRestoreCurrentFilename = " + mRestoreCurrentFilename);
+
+                    int position = mRecyclerViewAdapter.getPositionFromFilename(mRestoreCurrentFilename);
+                    if (position > -1)
+                    {
+                        mRecyclerView.getLayoutManager().scrollToPosition(position);
+                    }
+                }
+
+
+                Log.d(LOG_TAG, "onLoadFinished: mRestorePanelState = " + mRestorePanelState);
+                if (mRestorePanelState != null && mRestorePanelState != SlidingUpPanelLayout.PanelState.DRAGGING)
+                {
+                    mSlidingUpLayout.setPanelState(mRestorePanelState);
+
+                }
+
+               // mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+
             }
 
             data.moveToPosition(-1);
@@ -1707,11 +1837,13 @@ public class MainActivity extends AppCompatActivity implements
 
         mCameraRadius = cameraRadius;
 
-        Log.d(LOG_TAG, "onCameraIdle, mCameraRadius : " + mCameraRadius);
+
 
         if (mIsStoragePermissionGranted)
         {
+            Log.d(LOG_TAG, "onCameraIdle, mCameraRadius : " + mCameraRadius);
             getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+
         }
 
 
@@ -1729,8 +1861,6 @@ public class MainActivity extends AppCompatActivity implements
                 && !mRecyclerViewAdapter.isContextActionMenu())
         {
             Log.d(LOG_TAG, "CurrentLocationMarker x = " + mTapMotionEvent.getX() + ", y = " + mTapMotionEvent.getY());
-
-
 
 
             float finalRadius = (float) Math.hypot(mTapMotionEvent.getX(), mTapMotionEvent.getY());
@@ -1769,6 +1899,11 @@ public class MainActivity extends AppCompatActivity implements
                 });
 
                 anim.start();
+            }
+            //No circular reveal animation for below Lollipop devices
+            else{
+                Intent i = new Intent(MainActivity.this, CameraActivity.class);
+                startActivity(i);
             }
 
 
