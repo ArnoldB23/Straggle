@@ -63,10 +63,17 @@ import java.util.HashSet;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema.ImageTextures;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.dialog.LocationCheckDialog;
 import roca.bajet.com.straggle.objects.ImageTexture;
+import roca.bajet.com.straggle.upload.ApiUtils;
+import roca.bajet.com.straggle.upload.DeleteImageResponse;
+import roca.bajet.com.straggle.upload.ImgurService;
 import roca.bajet.com.straggle.util.TextureHelper;
 
 
@@ -119,13 +126,16 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     public float mCameraAzimuth;
     public int mOrientationDeg = 0;
     public HashSet<String> mITset;
+    public ImgurService mImgurService;
 
 
     public static final String [] IMAGESEARCH_COLUMNS = {
             ImageTextures.COL_FILENAME,
             ImageTextures.COL_LAT,
             ImageTextures.COL_LON,
-            ImageTextures.COL_ANGLE
+            ImageTextures.COL_ANGLE,
+            ImageTextures.COL_DELETE_HASH,
+            ImageTextures._ID
     };
 
 
@@ -146,6 +156,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
         ButterKnife.bind(this, rootView);
 
+        mImgurService = ApiUtils.getImgurService();
         mHandler = new Handler();
         mContext = getContext();
 
@@ -978,8 +989,9 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         double currentLon = currentLocation.getLongitude();
         double lat;
         double lon;
+        Long id;
         float [] distance = new float [3];
-
+        String deletehash;
 
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
 
@@ -995,7 +1007,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             while(data.moveToNext())
             {
 
-
+                id = data.getLong(data.getColumnIndex(ImageTextures._ID));
+                deletehash = data.getString(data.getColumnIndex(ImageTextures.COL_DELETE_HASH));
                 lat = data.getDouble(data.getColumnIndex(ImageTextures.COL_LAT));
                 lon = data.getDouble(data.getColumnIndex(ImageTextures.COL_LON));
                 final float angle = (float)data.getDouble(data.getColumnIndex(ImageTextures.COL_ANGLE));
@@ -1013,6 +1026,45 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
                 final String filename = data.getString(data.getColumnIndex(ImageTextures.COL_FILENAME));
                 final File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+
+                if (!mediaFile.exists())
+                {
+                    if (mITset.contains(filename))
+                    {
+                        mITset.remove(filename);
+                    }
+
+                    Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(ContentProviderOpenHelper.DEFAULT_USER_ID);
+                    String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
+                    String selectionArgs [] = {String.valueOf(id)};
+                    int deleted = mContext.getContentResolver().delete(deleteIdUri, where, selectionArgs);
+
+                    Log.d(LOG_TAG, "Image missing in app directory, deleting its record in content provider, deleted: " + deleted);
+
+                    if (deletehash != null)
+                    {
+                        mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
+                            @Override
+                            public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
+
+                                if (response.isSuccessful())
+                                {
+                                    Log.d(LOG_TAG, "onResponse, Successful HTTP response");
+
+                                }else{
+                                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : "  + response.code());
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<DeleteImageResponse> call, Throwable t) {
+                                Log.d(LOG_TAG, "onFailure, " + t.toString());
+                            }
+                        });
+                    }
+
+
+                }
 
 
                 if (!mITset.contains(filename))

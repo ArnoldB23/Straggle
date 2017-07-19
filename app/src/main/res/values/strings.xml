@@ -20,5 +20,12 @@
 
     <string name="menu_add_photo_title">Add a new photo</string>
     <string name="menu_add_photos_title">Add new photos</string>
+    <string name="menu_upload_title">Upload to Imgur</string>
+    <string name="menu_upload_delete_title">Remove upload from Imgur</string>
+
+    <string name="notification_fail">Image failed to upload...</string>
+    <string name="notification_share_link">Share link</string>
+    <string name="notification_success">Successfully uploaded</string>
+    <string name="notification_progress">Uploading image...</string>
     <!-- For Debug activity -->
 </resources>

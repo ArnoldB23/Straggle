@@ -19,4 +19,14 @@
           android:title="@string/menu_delete_title"
           app:showAsAction="always" />
 
+    <item android:id="@+id/action_upload"
+          android:icon="@drawable/upload_icon_48"
+          android:title="@string/menu_upload_title"
+          app:showAsAction="ifRoom|collapseActionView"/>
+
+    <item android:id="@+id/action_upload_delete"
+          android:icon="@drawable/upload_delete_icon_48"
+          android:title="@string/menu_upload_delete_title"
+          app:showAsAction="ifRoom|collapseActionView"/>
+
 </menu>

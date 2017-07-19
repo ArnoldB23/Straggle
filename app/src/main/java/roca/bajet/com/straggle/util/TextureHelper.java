@@ -32,12 +32,10 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Random;
 
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
@@ -690,9 +688,7 @@ public class TextureHelper {
         // Create a media file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 
-        byte[] array = new byte[7]; // length is bounded by 7
-        new Random().nextBytes(array);
-        String generatedString = new String(array, Charset.forName("UTF-8"));
+        String generatedString = randomstring();
 
 
         File mediaFile;
@@ -707,6 +703,28 @@ public class TextureHelper {
         }
 
         return mediaFile;
+    }
+
+
+    public static String randomstring(int lo, int hi){
+        int n = rand(lo, hi);
+        byte b[] = new byte[n];
+        for (int i = 0; i < n; i++)
+            b[i] = (byte)rand('a', 'z');
+        return new String(b, 0);
+    }
+
+    private static int rand(int lo, int hi){
+        java.util.Random rn = new java.util.Random();
+        int n = hi - lo + 1;
+        int i = rn.nextInt(n);
+        if (i < 0)
+            i = -i;
+        return lo + i;
+    }
+    //http://www.codecodex.com/wiki/Generate_a_random_password_or_random_string#Java
+    public static String randomstring(){
+        return randomstring(5, 25);
     }
 
 

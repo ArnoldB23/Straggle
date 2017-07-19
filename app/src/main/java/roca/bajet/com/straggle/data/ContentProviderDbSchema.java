@@ -32,6 +32,8 @@ public class ContentProviderDbSchema {
             ImageTextures.COL_LAT + "  REAL, " +
             ImageTextures.COL_ANGLE + " REAL, " +
             ImageTextures.COL_ASPECT_RATIO + " INTEGER, " +
+            ImageTextures.COL_URL + " TEXT, " +
+            ImageTextures.COL_DELETE_HASH + " TEXT, " +
             ImageTextures.COL_USER_ID + " INTEGER, " +
             " FOREIGN KEY ( " + ImageTextures.COL_USER_ID + " ) REFERENCES " +
             TBL_USERS + " ( " + Users._ID + " ) ON DELETE CASCADE " +
@@ -72,6 +74,8 @@ public class ContentProviderDbSchema {
         public static final String COL_LAT = "lat";
         public static final String COL_ANGLE = "angle";
         public static final String COL_ASPECT_RATIO = "aspect_ratio";
+        public static final String COL_URL = "url";
+        public static final String COL_DELETE_HASH = "delete_hash";
 
         public static final String SORT_ORDER_DEFAULT = COL_FILENAME + " ASC";
 

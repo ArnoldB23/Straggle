@@ -1,5 +1,6 @@
 package roca.bajet.com.straggle;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -9,7 +10,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.view.ActionMode;
-import android.support.v7.widget.CardView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -29,8 +29,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import okhttp3.MediaType;
+import okhttp3.RequestBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
+import roca.bajet.com.straggle.upload.ApiUtils;
+import roca.bajet.com.straggle.upload.DeleteImageResponse;
+import roca.bajet.com.straggle.upload.ImgurService;
+import roca.bajet.com.straggle.upload.PostImageResponse;
+import roca.bajet.com.straggle.upload.UploadNotificationHelper;
 import roca.bajet.com.straggle.util.TextureHelper;
 
 /**
@@ -53,7 +63,8 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     public static final int LANDSCAPE_VIEW_TYPE = 0;
     public static final int PORTRAIT_VIEW_TYPE = 1;
     public static final String LOG_TAG = "ImageCursorAdapter";
-
+    public ImgurService mImgurService;
+    public UploadNotificationHelper mNotificationHelper;
 
     private MultiSelector mMultiSelector = new MultiSelector();
     private ModalMultiSelectorCallback mActionModeCallback
@@ -178,10 +189,43 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                     {
 
                         mCursor.moveToPosition(position);
-                        Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
+                        final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
                         String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
                         File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
                         mediaFile.delete();
+
+                        String deletehash = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
+
+                        mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
+                            @Override
+                            public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
+
+                                if (response.isSuccessful())
+                                {
+                                    Log.d(LOG_TAG, "Action Delete, onResponse, Successful HTTP response");
+
+                                    ContentValues cv = new ContentValues();
+                                    cv.putNull(ContentProviderDbSchema.ImageTextures.COL_URL);
+                                    cv.putNull(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH);
+
+                                    Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
+                                    String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
+                                    String selectionArgs [] = {String.valueOf(id)};
+                                    int updated = mContext.getContentResolver().update(updateIdUri, cv, where, selectionArgs);
+
+                                    Log.d(LOG_TAG, "Action Delete, onResponse, updated : " + updated);
+
+
+                                }else{
+                                    Log.d(LOG_TAG, "Action Delete, onResponse, Failed HTTP response code : "  + response.code());
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<DeleteImageResponse> call, Throwable t) {
+                                Log.d(LOG_TAG, "Action Delete, onFailure, " + t.toString());
+                            }
+                        });
 
 
                         Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
@@ -197,6 +241,156 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                     }
 
                     Log.d(LOG_TAG, "Action Delete, count: " + mMultiSelector.getSelectedPositions().size());
+
+                    mode.finish();
+                    mMultiSelector.clearSelections();
+                    mFileNameListId.clear();
+
+                    return true;
+
+                case R.id.action_upload:
+
+                    MediaType MEDIA_TYPE = MediaType.parse("image/jpeg");
+
+                    for (Integer position : mMultiSelector.getSelectedPositions())
+                    {
+                        mCursor.moveToPosition(position);
+                        final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
+
+                        String url = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_URL));
+
+
+
+                        if (url == null)
+                        {
+                            String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
+                            File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
+                            RequestBody requestBody = RequestBody.create(MEDIA_TYPE, mediaFile);
+
+                            mNotificationHelper.createUploadingNotification();
+
+                            mImgurService.postImage(BuildConfig.IMGUR_AUTHORIZATION, requestBody).enqueue(new Callback<PostImageResponse>() {
+                                @Override
+                                public void onResponse(Call<PostImageResponse> call, Response<PostImageResponse> response) {
+
+                                    if (response.isSuccessful())
+                                    {
+                                        Log.d(LOG_TAG, "postImage onResponse, Successful HTTP response");
+
+                                        ContentValues cv = new ContentValues();
+                                        cv.put(ContentProviderDbSchema.ImageTextures.COL_URL, response.body().data.link);
+                                        cv.put(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH, response.body().data.deletehash);
+
+                                        Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
+                                        String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
+                                        String selectionArgs [] = {String.valueOf(id)};
+                                        int updated = mContext.getContentResolver().update(updateIdUri, cv, where, selectionArgs);
+
+                                        Log.d(LOG_TAG, "postImage onResponse, updated : " + updated);
+
+                                        mNotificationHelper.createUploadedNotification(response.body().data.link);
+
+                                    }else{
+                                        Log.d(LOG_TAG, "postImage onResponse, Failed HTTP response, code: " + response.code() + ", " + response.body().data.error);
+                                        mNotificationHelper.createFailedUploadNotification();
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<PostImageResponse> call, Throwable t) {
+                                    Log.d(LOG_TAG, "postImage onFailure ");
+                                    mNotificationHelper.createFailedUploadNotification();
+                                }
+                            });
+                        }
+                        //URL already exists
+                        else{
+
+                            Log.d(LOG_TAG, "postImage URL already exists");
+                            mNotificationHelper.createUploadedNotification(url);
+                        }
+
+
+
+
+
+
+                    }
+
+                    Log.d(LOG_TAG, "Action upload, count: " + mMultiSelector.getSelectedPositions().size());
+
+                    mode.finish();
+                    mMultiSelector.clearSelections();
+                    mFileNameListId.clear();
+
+                    return true;
+
+                case R.id.action_upload_delete:
+
+                    for (Integer position : mMultiSelector.getSelectedPositions())
+                    {
+                        mCursor.moveToPosition(position);
+                        final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
+
+                        String url = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_URL));
+                        String deletehash = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
+
+
+                        if (url == null)
+                        {
+                            Log.d(LOG_TAG, "Delete Image URL doesn't exist");
+                            break;
+
+                        }
+                        //URL already exists
+                        else{
+
+                            Log.d(LOG_TAG, "Delete Image URL exists: " + url + ", deletehash: " + deletehash);
+
+
+                            mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
+                                @Override
+                                public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
+
+                                    if (response.isSuccessful())
+                                    {
+                                        Log.d(LOG_TAG, "Delete Image, onResponse, Successful HTTP response");
+
+                                        ContentValues cv = new ContentValues();
+                                        cv.putNull(ContentProviderDbSchema.ImageTextures.COL_URL);
+                                        cv.putNull(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH);
+
+                                        Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
+                                        String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
+                                        String selectionArgs [] = {String.valueOf(id)};
+                                        int updated = mContext.getContentResolver().update(updateIdUri, cv, where, selectionArgs);
+
+                                        Log.d(LOG_TAG, "Delete Image, onResponse, updated : " + updated);
+
+
+                                    }else{
+                                        Log.d(LOG_TAG, "Delete Image, onResponse, Failed HTTP response code : "  + response.code());
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<DeleteImageResponse> call, Throwable t) {
+
+                                    Log.d(LOG_TAG, "Delete Image, onFailure, " + t.toString());
+                                }
+                            });
+
+
+                        }
+
+
+
+
+
+
+                    }
+
+                    Log.d(LOG_TAG, "Action upload delete, count: " + mMultiSelector.getSelectedPositions().size());
 
                     mode.finish();
                     mMultiSelector.clearSelections();
@@ -228,6 +422,9 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         mContext = context;
 
         mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
+        mImgurService = ApiUtils.getImgurService();
+        mNotificationHelper = new UploadNotificationHelper(mContext);
+
     }
 
     @Override

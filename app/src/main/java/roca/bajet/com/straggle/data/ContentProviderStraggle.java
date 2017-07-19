@@ -329,9 +329,13 @@ public class ContentProviderStraggle extends ContentProvider {
                 updateCount = db.update(TBL_IMAGETEXTURES, contentValues, selection, selectionArgs);
                 break;
             case URI_MATCH_IMAGETEXTURES_ID: {
-                String where = ImageTextures.COL_USER_ID + " = ?";
+                String where = ImageTextures.COL_USER_ID + " = '" + uri.getLastPathSegment() + "'";
 
-                updateCount = db.update(TBL_IMAGETEXTURES, contentValues, where, new String [] {uri.getLastPathSegment()});
+                if (!TextUtils.isEmpty(selection)) {
+                    where += " AND " + selection;
+                }
+
+                updateCount = db.update(TBL_IMAGETEXTURES, contentValues, where, selectionArgs);
                 break;
             }
             case URI_MATCH_IMAGETEXTURES_FILENAME: {

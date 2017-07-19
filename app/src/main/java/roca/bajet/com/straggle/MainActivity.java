@@ -87,12 +87,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.dialog.LocationCheckDialog;
 import roca.bajet.com.straggle.map.ImageBubbleIcon;
 import roca.bajet.com.straggle.map.ImageBubbleIconRenderer;
 import roca.bajet.com.straggle.map.OverviewClusterManager;
+import roca.bajet.com.straggle.upload.ApiUtils;
+import roca.bajet.com.straggle.upload.DeleteImageResponse;
+import roca.bajet.com.straggle.upload.ImgurService;
 import roca.bajet.com.straggle.util.TextureHelper;
 
 import static roca.bajet.com.straggle.CameraRenderer.getAngleBetweenVectors;
@@ -169,7 +175,9 @@ public class MainActivity extends AppCompatActivity implements
             ContentProviderDbSchema.ImageTextures.COL_FILENAME,
             ContentProviderDbSchema.ImageTextures.COL_LAT,
             ContentProviderDbSchema.ImageTextures.COL_LON,
-            ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO
+            ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO,
+            ContentProviderDbSchema.ImageTextures.COL_URL,
+            ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH
     };
 
     private LocationCheckDialog mLocationCheckDialog;
@@ -196,6 +204,7 @@ public class MainActivity extends AppCompatActivity implements
     private String mAction;
     private String mType;
     private ActionBar mActionBar;
+    private ImgurService mImgurService;
 
 
     public Handler mHandler;
@@ -267,7 +276,7 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.main_activity);
 
         mHandler = new Handler();
-
+        mImgurService = ApiUtils.getImgurService();
 
         mCircularRevealView = findViewById(R.id.circular_reveal_view);
 
@@ -1633,6 +1642,7 @@ public class MainActivity extends AppCompatActivity implements
         double currentLat = mGoogleMap.getCameraPosition().target.latitude;
         double currentLon = mGoogleMap.getCameraPosition().target.longitude;
         String filename;
+        Long id;
         double lat;
         double lon;
         float [] distance = new float [3];
@@ -1695,6 +1705,7 @@ public class MainActivity extends AppCompatActivity implements
             while(data.moveToNext())
             {
                 //Log.d(LOG_TAG, "")
+                id = data.getLong(data.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
                 lat = data.getDouble(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LAT));
                 lon = data.getDouble(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LON));
 
@@ -1724,8 +1735,49 @@ public class MainActivity extends AppCompatActivity implements
                 getContentResolver().update(uri, cv, where, whereArgs);
                 */
 
+                if (!mediaFile.exists())
+                {
+                    if (mITmap.containsKey(filename))
+                    {
+                        mClusterManager.removeItem(mITmap.get(filename));
+                        mITmap.remove(filename);
+                    }
 
-                if (!mITmap.containsKey(filename))
+                    Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(ContentProviderOpenHelper.DEFAULT_USER_ID);
+                    String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
+                    String selectionArgs [] = {String.valueOf(id)};
+                    int deleted = getContentResolver().delete(deleteIdUri, where, selectionArgs);
+
+                    Log.d(LOG_TAG, "Image missing in app directory, deleting its record in content provider, deleted: " + deleted);
+
+                    String deletehash = data.getString(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
+
+                    if (deletehash != null)
+                    {
+                        mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
+                            @Override
+                            public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
+
+                                if (response.isSuccessful())
+                                {
+                                    Log.d(LOG_TAG, "onResponse, Successful HTTP response");
+
+                                }else{
+                                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : "  + response.code());
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(Call<DeleteImageResponse> call, Throwable t) {
+                                Log.d(LOG_TAG, "onFailure, " + t.toString());
+                            }
+                        });
+                    }
+
+
+                }
+
+                else if (!mITmap.containsKey(filename))
                 {
                     Bitmap bp = TextureHelper.decodeSampledBitmapFromFile(mediaFile.getAbsolutePath(), 48, 48);
 

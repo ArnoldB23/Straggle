@@ -12,7 +12,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class ContentProviderOpenHelper extends SQLiteOpenHelper {
 
     private static final  String NAME = ContentProviderDbSchema.DB_NAME;
-    private static final int VERSION = 6;
+    private static final int VERSION = 10;
     public static long DEFAULT_USER_ID;
     public static long DEFAULT_CURRENT_LOCATION_ID = 1;
 
