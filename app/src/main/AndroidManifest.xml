@@ -49,6 +49,8 @@
 
         </activity>
 
+        <service android:name=".upload.UploadIntentService"/>
+
         <provider
             android:name=".data.ContentProviderStraggle"
             android:authorities="roca.bajet.com.straggle"

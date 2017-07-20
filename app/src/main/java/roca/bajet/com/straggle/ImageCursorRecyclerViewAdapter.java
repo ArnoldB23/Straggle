@@ -40,6 +40,7 @@ import roca.bajet.com.straggle.upload.ApiUtils;
 import roca.bajet.com.straggle.upload.DeleteImageResponse;
 import roca.bajet.com.straggle.upload.ImgurService;
 import roca.bajet.com.straggle.upload.PostImageResponse;
+import roca.bajet.com.straggle.upload.UploadIntentService;
 import roca.bajet.com.straggle.upload.UploadNotificationHelper;
 import roca.bajet.com.straggle.util.TextureHelper;
 
@@ -54,6 +55,8 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     private boolean toggleSelectAll = false;
     private HashMap<Long, String> mFileNameListId = new HashMap<>();
     public ActionMode mActionMode;
+    private Intent mUploadServiceIntent;
+    private UploadNotificationHelper mNotificationHelper;
 
     public static final String TOGGLE_SELECT_ALL_KEY = "TOGGLE_SELECT_ALL_KEY";
     public static final String FILE_NAME_LIST_ID_KEY = "FILE_NAME_LIST_ID_KEY";
@@ -63,8 +66,8 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     public static final int LANDSCAPE_VIEW_TYPE = 0;
     public static final int PORTRAIT_VIEW_TYPE = 1;
     public static final String LOG_TAG = "ImageCursorAdapter";
-    public ImgurService mImgurService;
-    public UploadNotificationHelper mNotificationHelper;
+
+
 
     private MultiSelector mMultiSelector = new MultiSelector();
     private ModalMultiSelectorCallback mActionModeCallback
@@ -196,6 +199,12 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                         String deletehash = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
 
+                        //mImgurService todo:
+                        mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGE);
+                        mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGE, deletehash);
+                        mContext.startService(mUploadServiceIntent);
+
+                        /*
                         mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
                             @Override
                             public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
@@ -227,6 +236,8 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                             }
                         });
 
+                        */
+
 
                         Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
                         String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
@@ -250,7 +261,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                 case R.id.action_upload:
 
-                    MediaType MEDIA_TYPE = MediaType.parse("image/jpeg");
+
 
                     for (Integer position : mMultiSelector.getSelectedPositions())
                     {
@@ -264,44 +275,12 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                         if (url == null)
                         {
                             String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
-                            File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
-                            RequestBody requestBody = RequestBody.create(MEDIA_TYPE, mediaFile);
 
-                            mNotificationHelper.createUploadingNotification();
-
-                            mImgurService.postImage(BuildConfig.IMGUR_AUTHORIZATION, requestBody).enqueue(new Callback<PostImageResponse>() {
-                                @Override
-                                public void onResponse(Call<PostImageResponse> call, Response<PostImageResponse> response) {
-
-                                    if (response.isSuccessful())
-                                    {
-                                        Log.d(LOG_TAG, "postImage onResponse, Successful HTTP response");
-
-                                        ContentValues cv = new ContentValues();
-                                        cv.put(ContentProviderDbSchema.ImageTextures.COL_URL, response.body().data.link);
-                                        cv.put(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH, response.body().data.deletehash);
-
-                                        Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
-                                        String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                                        String selectionArgs [] = {String.valueOf(id)};
-                                        int updated = mContext.getContentResolver().update(updateIdUri, cv, where, selectionArgs);
-
-                                        Log.d(LOG_TAG, "postImage onResponse, updated : " + updated);
-
-                                        mNotificationHelper.createUploadedNotification(response.body().data.link);
-
-                                    }else{
-                                        Log.d(LOG_TAG, "postImage onResponse, Failed HTTP response, code: " + response.code() + ", " + response.body().data.error);
-                                        mNotificationHelper.createFailedUploadNotification();
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(Call<PostImageResponse> call, Throwable t) {
-                                    Log.d(LOG_TAG, "postImage onFailure ");
-                                    mNotificationHelper.createFailedUploadNotification();
-                                }
-                            });
+                            //todo: mImgurService
+                            mUploadServiceIntent.putExtra("tag", UploadIntentService.POSTIMAGE);
+                            mUploadServiceIntent.putExtra(UploadIntentService.POSTIMAGE, filename);
+                            mUploadServiceIntent.putExtra(UploadIntentService.POSTIMAGE_ID, id);
+                            mContext.startService(mUploadServiceIntent);
                         }
                         //URL already exists
                         else{
@@ -345,41 +324,11 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                         //URL already exists
                         else{
 
-                            Log.d(LOG_TAG, "Delete Image URL exists: " + url + ", deletehash: " + deletehash);
-
-
-                            mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
-                                @Override
-                                public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
-
-                                    if (response.isSuccessful())
-                                    {
-                                        Log.d(LOG_TAG, "Delete Image, onResponse, Successful HTTP response");
-
-                                        ContentValues cv = new ContentValues();
-                                        cv.putNull(ContentProviderDbSchema.ImageTextures.COL_URL);
-                                        cv.putNull(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH);
-
-                                        Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
-                                        String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                                        String selectionArgs [] = {String.valueOf(id)};
-                                        int updated = mContext.getContentResolver().update(updateIdUri, cv, where, selectionArgs);
-
-                                        Log.d(LOG_TAG, "Delete Image, onResponse, updated : " + updated);
-
-
-                                    }else{
-                                        Log.d(LOG_TAG, "Delete Image, onResponse, Failed HTTP response code : "  + response.code());
-                                    }
-                                }
-
-                                @Override
-                                public void onFailure(Call<DeleteImageResponse> call, Throwable t) {
-
-                                    Log.d(LOG_TAG, "Delete Image, onFailure, " + t.toString());
-                                }
-                            });
-
+                            //todo: mImgurService
+                            mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGEANDRECORD);
+                            mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGEANDRECORD, deletehash);
+                            mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGEANDRECORD_ID, id);
+                            mContext.startService(mUploadServiceIntent);
 
                         }
 
@@ -422,7 +371,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         mContext = context;
 
         mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
-        mImgurService = ApiUtils.getImgurService();
+        mUploadServiceIntent = new Intent (mContext, UploadIntentService.class);
         mNotificationHelper = new UploadNotificationHelper(mContext);
 
     }

@@ -87,18 +87,13 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Random;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 import roca.bajet.com.straggle.data.ContentProviderDbSchema;
 import roca.bajet.com.straggle.data.ContentProviderOpenHelper;
 import roca.bajet.com.straggle.dialog.LocationCheckDialog;
 import roca.bajet.com.straggle.map.ImageBubbleIcon;
 import roca.bajet.com.straggle.map.ImageBubbleIconRenderer;
 import roca.bajet.com.straggle.map.OverviewClusterManager;
-import roca.bajet.com.straggle.upload.ApiUtils;
-import roca.bajet.com.straggle.upload.DeleteImageResponse;
-import roca.bajet.com.straggle.upload.ImgurService;
+import roca.bajet.com.straggle.upload.UploadIntentService;
 import roca.bajet.com.straggle.util.TextureHelper;
 
 import static roca.bajet.com.straggle.CameraRenderer.getAngleBetweenVectors;
@@ -204,7 +199,7 @@ public class MainActivity extends AppCompatActivity implements
     private String mAction;
     private String mType;
     private ActionBar mActionBar;
-    private ImgurService mImgurService;
+    private Intent mUploadServiceIntent;
 
 
     public Handler mHandler;
@@ -276,7 +271,7 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.main_activity);
 
         mHandler = new Handler();
-        mImgurService = ApiUtils.getImgurService();
+        mUploadServiceIntent = new Intent (this, UploadIntentService.class);
 
         mCircularRevealView = findViewById(R.id.circular_reveal_view);
 
@@ -501,9 +496,11 @@ public class MainActivity extends AppCompatActivity implements
 
                     startActivityForResult(intent, PLACE_AUTOCOMPLETE_REQUEST_CODE);
                 } catch (GooglePlayServicesRepairableException e) {
-                    // TODO: Handle the error.
+
+                    Log.d(LOG_TAG, "action_search selected error " + e.toString());
                 } catch (GooglePlayServicesNotAvailableException e) {
-                    // TODO: Handle the error.
+
+                    Log.d(LOG_TAG, "action_search selected error " + e.toString());
                 }
 
 
@@ -802,7 +799,7 @@ public class MainActivity extends AppCompatActivity implements
 
             mCurrentLocationMarker.setVisible(false);
 
-            mLocationPermissionGranted = false; //todo:
+            mLocationPermissionGranted = false;
             /*
             if (mLocationPermissionGranted)
             {
@@ -1133,7 +1130,6 @@ public class MainActivity extends AppCompatActivity implements
                 {
                     Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted granted!");
                     mIsStoragePermissionGranted = true;
-                    //todo:
                 }
                 else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED)
                 {
@@ -1495,11 +1491,12 @@ public class MainActivity extends AppCompatActivity implements
                 }
             } else if (resultCode == PlaceAutocomplete.RESULT_ERROR) {
                 Status status = PlaceAutocomplete.getStatus(this, data);
-                // TODO: Handle the error.
+
                 Log.i(LOG_TAG, status.getStatusMessage());
 
             } else if (resultCode == RESULT_CANCELED) {
                 // The user canceled the operation.
+                Log.i(LOG_TAG, "onActivityResult, result cancelled");
             }
         }
 
@@ -1743,35 +1740,18 @@ public class MainActivity extends AppCompatActivity implements
                         mITmap.remove(filename);
                     }
 
-                    Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(ContentProviderOpenHelper.DEFAULT_USER_ID);
-                    String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                    String selectionArgs [] = {String.valueOf(id)};
-                    int deleted = getContentResolver().delete(deleteIdUri, where, selectionArgs);
-
-                    Log.d(LOG_TAG, "Image missing in app directory, deleting its record in content provider, deleted: " + deleted);
 
                     String deletehash = data.getString(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
 
                     if (deletehash != null)
                     {
-                        mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {
-                            @Override
-                            public void onResponse(Call<DeleteImageResponse> call, Response<DeleteImageResponse> response) {
+                        //todo: mImgurService
+                        Log.d(LOG_TAG, "Deleting non-existent image record from content provider");
 
-                                if (response.isSuccessful())
-                                {
-                                    Log.d(LOG_TAG, "onResponse, Successful HTTP response");
-
-                                }else{
-                                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : "  + response.code());
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(Call<DeleteImageResponse> call, Throwable t) {
-                                Log.d(LOG_TAG, "onFailure, " + t.toString());
-                            }
-                        });
+                        mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGEANDRECORD);
+                        mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGEANDRECORD, deletehash);
+                        mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGEANDRECORD_ID, id);
+                        startService(mUploadServiceIntent);
                     }
 
 
