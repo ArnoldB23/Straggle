@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:keepScreenOn="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background_mica"
+    android:id="@+id/camera_framelayout">
+
+    <android.opengl.GLSurfaceView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/gl_surfaceview"/>
+
+    <roca.bajet.com.straggle.RatioTabletFrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_gravity="bottom"
+        android:clickable="true"
+        android:background="@android:color/darker_gray"
+        android:foreground="?attr/selectableItemBackground"
+        android:elevation="@dimen/app_bar_height"
+        android:focusable="true"
+        android:id="@+id/take_picture_frame_button">
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/take_picture_button_content_description"
+            android:layout_gravity="center|center_vertical"
+            android:scaleType="centerInside"
+            android:background="@drawable/take_pic_button_statelist"
+            android:id="@+id/take_picture_imageview"
+            >
+        </ImageView>
+
+    </roca.bajet.com.straggle.RatioTabletFrameLayout>
+
+
+
+</FrameLayout>

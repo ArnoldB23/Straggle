@@ -127,6 +127,7 @@ public class MainActivity extends AppCompatActivity implements
     public static final String EXTRA_IMAGE_FILENAME = "extra_image_filename";
 
     private static final int PLACE_AUTOCOMPLETE_REQUEST_CODE = 1;
+    private final static int CAMERA_ACTIVITY_REQUEST_CODE = 2;
 
     private View mCircularRevealView;
     private MapFragment mMapFragment;
@@ -297,24 +298,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
-        mSlidingUpLayout.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-
-                Log.d(LOG_TAG, "mSlidingUpLayout onLongClick");
-                return false;
-            }
-        });
-
-        mSlidingUpLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Log.d(LOG_TAG, "mSlidingUpLayout onClick");
-            }
-        });
-
-
-
 
 
 
@@ -335,14 +318,10 @@ public class MainActivity extends AppCompatActivity implements
 
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_fragment);
 
+
+
         mMapFragment.getMapAsync(this);
 
-        if (mMapFragment.getView() == null)
-        {
-            Log.d(LOG_TAG, "onCreate, map fragment view is null!");
-        }else{
-            Log.d(LOG_TAG, "onCreate, map fragment view exists!");
-        }
 
 
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -433,7 +412,7 @@ public class MainActivity extends AppCompatActivity implements
         if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
                 && mAddMenuActionMode == null) {
 
-            Log.d(LOG_TAG, "onNewIntent. add menu action mode");
+            Log.d(LOG_TAG, "onNewIntent. Add menu action mode");
 
             mRecyclerViewAdapter.closeContextActionMenu();
             mAddMenuActionMode = startSupportActionMode(mAddMenuActionModeCallback);
@@ -442,11 +421,16 @@ public class MainActivity extends AppCompatActivity implements
             mAddNewPhotoMarker = mGoogleMap.addMarker(new MarkerOptions()
                     .anchor(0.5f, 1f)
                     .zIndex(1.0f)
+                    .snippet(getString(R.string.add_new_photo_marker_title))
                     .position(new LatLng(mCurrentCameraPosition.target.latitude, mCurrentCameraPosition.target.longitude))
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
                     .draggable(true)
                     .visible(true)
                     .flat(true));
+
+
+
+
 
             if (Intent.ACTION_SEND.equals(mAction))
             {
@@ -519,9 +503,10 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public boolean dispatchTouchEvent (MotionEvent ev)
     {
-        //Log.d(LOG_TAG, "dispatchTouchEvent");
-
-        mGestureDetector.onTouchEvent(ev);
+        if (mGestureDetector != null)
+        {
+            mGestureDetector.onTouchEvent(ev);
+        }
 
         return super.dispatchTouchEvent(ev);
     }
@@ -531,7 +516,6 @@ public class MainActivity extends AppCompatActivity implements
     {
         super.onDestroy();
         Log.d(LOG_TAG, "onDestroy");
-
 
     }
 
@@ -638,9 +622,27 @@ public class MainActivity extends AppCompatActivity implements
                 .position(new LatLng(0, 0))
                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.north_direction_48))
                 .alpha(0.6f)
+                .snippet(getString(R.string.current_location_marker_title))
                 .visible(false)
                 .flat(true));
 
+
+        mGoogleMap.setOnMarkerDragListener(new GoogleMap.OnMarkerDragListener() {
+            @Override
+            public void onMarkerDragStart(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDrag(Marker marker) {
+
+            }
+
+            @Override
+            public void onMarkerDragEnd(Marker marker) {
+
+            }
+        });
 
 
         if (isConfigurationChange)
@@ -696,7 +698,6 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public boolean onSingleTapUp (MotionEvent ev)
             {
-                Log.d(LOG_TAG, "onSingleTapUp...");
                 mTapMotionEvent = ev;
                 return super.onSingleTapUp(ev);
             }
@@ -704,7 +705,7 @@ public class MainActivity extends AppCompatActivity implements
             @Override
             public void onLongPress(MotionEvent ev)
             {
-                Log.d(LOG_TAG, "onLongPress...");
+
                 super.onLongPress(ev);
             }
 
@@ -724,10 +725,12 @@ public class MainActivity extends AppCompatActivity implements
                     .anchor(0.5f, 1f)
                     .zIndex(1.0f)
                     .visible(true)
+                    .snippet(getString(R.string.add_new_photo_marker_title))
                     .position(new LatLng(mCurrentCameraPosition.target.latitude, mCurrentCameraPosition.target.longitude))
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
                     .draggable(true)
                     .flat(true));
+
 
             if (Intent.ACTION_SEND.equals(mAction))
             {
@@ -750,10 +753,12 @@ public class MainActivity extends AppCompatActivity implements
                     .anchor(0.5f, 1f)
                     .zIndex(1.0f)
                     .visible(true)
+                    .snippet(getString(R.string.add_new_photo_marker_title))
                     .position(new LatLng(mRestoreAddMarkerLatLng.latitude, mRestoreAddMarkerLatLng.longitude))
                     .icon(BitmapDescriptorFactory.fromResource(R.drawable.pin_center_48))
                     .draggable(true)
                     .flat(true));
+
 
             if (Intent.ACTION_SEND.equals(mAction))
             {
@@ -765,7 +770,7 @@ public class MainActivity extends AppCompatActivity implements
 
         }
 
-        //updateLocationUI();
+
 
     }
 
@@ -776,11 +781,6 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-    /*
-     * Request location permission, so that we can get the location of the
-     * device. The result of the permission request is handled by a callback,
-     * onRequestPermissionsResult.
-     */
         if (ContextCompat.checkSelfPermission(this,
                 android.Manifest.permission.ACCESS_FINE_LOCATION)
                 == PackageManager.PERMISSION_GRANTED) {
@@ -798,18 +798,7 @@ public class MainActivity extends AppCompatActivity implements
             mCurrentLocation = null;
 
             mCurrentLocationMarker.setVisible(false);
-
             mLocationPermissionGranted = false;
-            /*
-            if (mLocationPermissionGranted)
-            {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
-                        LOCATION_PERMISSION_REQUEST_CODE);
-            }
-
-            */
-
         }
 
 
@@ -1255,15 +1244,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         Log.d(LOG_TAG, "onSaveInstanceState");
-        /*
-        private static final String KEY_LOCATION_MARKER_VISIBLE =  "key_location_marker_visible";
-        private static final String KEY_LOCATION_MARKER_ROTATION = "key_location_marker_rotation";
-        private static final String KEY_TOGGLE_UPDATE = "key_toggle_update";
-        private static final String KEY_REQUESTING_LOCATION_UPDATES = "key_requesting_location_updates";
-        private static final String KEY_LOCATION_PERMISSION_GRANTED = "key_location_permission_granted";
-        private static final String KEY_LOCATION_SETTINGS_ENTERED = "key_location_settings_entered";
-        private static final String KEY_IS_ROTATION_VECTOR = "key_is_rotation_vector";
-        */
+
 
         if (mGoogleMap != null) {
             outState.putParcelable(KEY_CAMERA_POSITION, mGoogleMap.getCameraPosition());
@@ -1467,10 +1448,14 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        //getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER,null,this);
+        if (isConfigurationChange)
+        {
+            getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER,null,this);
+        }
+        else{
+            getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER,null,this);
+        }
 
-
-        getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER,null,this);
     }
 
     @Override
@@ -1498,6 +1483,12 @@ public class MainActivity extends AppCompatActivity implements
                 // The user canceled the operation.
                 Log.i(LOG_TAG, "onActivityResult, result cancelled");
             }
+        }
+
+        else if (requestCode == CAMERA_ACTIVITY_REQUEST_CODE)
+        {
+            Log.d(LOG_TAG, "onActivityResult, CAMERA_ACTIVITY_REQUEST_CODE");
+            //getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER,null,this);
         }
 
     }
@@ -1573,6 +1564,8 @@ public class MainActivity extends AppCompatActivity implements
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
         CursorLoader cursorLoader = null;
 
+        Log.d(LOG_TAG, "onCreateLoader");
+
         if (id == IMAGESEARCH_LOADER && mIsStoragePermissionGranted)
         {
 
@@ -1605,14 +1598,6 @@ public class MainActivity extends AppCompatActivity implements
             double nLat = (currentLat + decDegrees);
             double sLat = (currentLat - decDegrees);
 
-            if ( wLoc.getLongitude() > 0 && eLoc.getLongitude() < 0)
-            {
-
-            }
-
-            else {
-
-            }
 
             String selection = ContentProviderDbSchema.ImageTextures.COL_LON + " > " + wLoc.getLongitude() + " AND " +  ContentProviderDbSchema.ImageTextures.COL_LON + " < " + eLoc.getLongitude() +
                     " AND " + ContentProviderDbSchema.ImageTextures.COL_LAT + " > " + sLat + " AND " + ContentProviderDbSchema.ImageTextures.COL_LAT + " < " + nLat;
@@ -1653,8 +1638,6 @@ public class MainActivity extends AppCompatActivity implements
             {
                 mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
             }
-
-
 
 
             Log.d(LOG_TAG, "onLoadFinished: number of items in cursor = " + data.getCount());
@@ -1745,7 +1728,6 @@ public class MainActivity extends AppCompatActivity implements
 
                     if (deletehash != null)
                     {
-                        //todo: mImgurService
                         Log.d(LOG_TAG, "Deleting non-existent image record from content provider");
 
                         mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGEANDRECORD);
@@ -1916,7 +1898,7 @@ public class MainActivity extends AppCompatActivity implements
 
 
                         Intent i = new Intent(MainActivity.this, CameraActivity.class);
-                        startActivity(i);
+                        startActivityForResult(i, CAMERA_ACTIVITY_REQUEST_CODE);
                     }
 
                     @Override
@@ -1935,7 +1917,7 @@ public class MainActivity extends AppCompatActivity implements
             //No circular reveal animation for below Lollipop devices
             else{
                 Intent i = new Intent(MainActivity.this, CameraActivity.class);
-                startActivity(i);
+                startActivityForResult(i, CAMERA_ACTIVITY_REQUEST_CODE);
             }
 
 

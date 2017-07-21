@@ -58,7 +58,10 @@ public class ImageBubbleIconRenderer extends DefaultClusterRenderer<ImageBubbleI
         mImageView.setImageBitmap(bubbleIcon.mBitmap);
         Bitmap icon = mIconGenerator.makeIcon();
         markerOptions.icon(BitmapDescriptorFactory.fromBitmap(icon));
+        markerOptions.snippet(mContext.getString(R.string.cluster_item_title));
+
     }
+
 
     @Override
     protected void onBeforeClusterRendered(Cluster<ImageBubbleIcon> cluster, MarkerOptions markerOptions) {
@@ -81,12 +84,15 @@ public class ImageBubbleIconRenderer extends DefaultClusterRenderer<ImageBubbleI
         MultiDrawable multiDrawable = new MultiDrawable(bitmaps);
         multiDrawable.setBounds(0, 0, width, height);
 
+
         mClusterImageView.setImageDrawable(multiDrawable);
         Bitmap icon = mClusterIconGenerator.makeIcon(String.valueOf(cluster.getSize()));
         markerOptions.icon(BitmapDescriptorFactory.fromBitmap(icon));
-
+        markerOptions.snippet("Photo cluster of " + String.valueOf(bitmaps.size()));
 
     }
+
+
 
     @Override
     protected boolean shouldRenderAsCluster(Cluster cluster) {

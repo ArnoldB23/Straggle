@@ -195,14 +195,24 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                         final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
                         String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
                         File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
-                        mediaFile.delete();
+
+                        if (mediaFile.exists())
+                        {
+                            mediaFile.delete();
+                        }
+
 
                         String deletehash = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
 
                         //mImgurService todo:
-                        mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGE);
-                        mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGE, deletehash);
-                        mContext.startService(mUploadServiceIntent);
+
+                        if (deletehash != null)
+                        {
+                            mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGE);
+                            mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGE, deletehash);
+                            mContext.startService(mUploadServiceIntent);
+                        }
+
 
                         /*
                         mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).enqueue(new Callback<DeleteImageResponse>() {

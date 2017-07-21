@@ -102,6 +102,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
     public boolean mIsStoragePermissionGranted;
     public boolean mIsLocationPermissionGranted;
     public boolean mIsLocationEnabled;
+    public boolean mIsTablet;
 
     private LocationCallback mLocationCallback;
     private LocationCheckDialog mLocationCheckDialog;
@@ -109,7 +110,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
     @BindView(R.id.gl_surfaceview) public GLSurfaceView mGLSurfaceView;
     //@BindView(R.id.debug_textview) public TextView mDebugTextView;
-    @BindView(R.id.take_picture_button) public ImageButton mTakePicButton;
+    @Nullable @BindView(R.id.take_picture_button) public ImageButton mTakePicButton;
+    @Nullable @BindView (R.id.take_picture_frame_button) public RatioTabletFrameLayout mRatioTabletFrameLayout;
     @BindView(R.id.camera_framelayout) public FrameLayout mFrameLayout;
 
     private String debugText;
@@ -155,6 +157,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         View rootView = inflater.inflate(R.layout.fragment_camera, container, false);
 
         ButterKnife.bind(this, rootView);
+
+        mIsTablet = mRatioTabletFrameLayout != null && mRatioTabletFrameLayout.getVisibility() == View.VISIBLE;
 
         mImgurService = ApiUtils.getImgurService();
         mHandler = new Handler();
@@ -246,118 +250,27 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         );
 
 
+        if (!mIsTablet)
+        {
+            mTakePicButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
 
-        mTakePicButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                if (mCamera == null || !mIsCameraPermissionGranted || !mIsStoragePermissionGranted || !mIsLocationEnabled || !mIsLocationPermissionGranted)
-                {
-                    Log.d(LOG_TAG, "TakePicButton onclick, missing requirement(s)!");
-                    Log.d(LOG_TAG, mIsCameraPermissionGranted + " " + mIsStoragePermissionGranted + " " + mIsLocationEnabled + " " + mIsLocationPermissionGranted);
-                    return;
+                    takePicture();
                 }
-
-                mCamera.takePicture(null, null, new Camera.PictureCallback() {
-                    @Override
-                    public void onPictureTaken(byte[] bytes, Camera camera) {
-                        final File pictureFile = TextureHelper.getOutputMediaFile(TextureHelper.MEDIA_TYPE_IMAGE);
-
-                        if (pictureFile == null)
-                        {
-                            Log.d(LOG_TAG, "Error creating media file, check storage permissions... ");
-                            return;
-                        }
-
-                        try {
-                            FileOutputStream fos = new FileOutputStream(pictureFile);
-
-                            DisplayMetrics displaymetrics = new DisplayMetrics();
-                            Display dp = getActivity().getWindowManager().getDefaultDisplay();
-                            dp.getMetrics(displaymetrics);
-
-                            //float [] adjustedOrientation = adjustAccelOrientation(dp.getRotation(), mOrientation);
-
-
-                            Bitmap scaledBitmap = TextureHelper.decodeSampledBitmapFromBytes(bytes, displaymetrics.widthPixels, displaymetrics.heightPixels);
-
-                            //mDebugTextView.setText("Orientation rotation: " + mOrientationDeg);
-
-                            Bitmap rotateBitmap = rotate(scaledBitmap, mOrientationDeg);
-
-                            rotateBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-
-
-                            //fos.write(bytes);
-                            fos.close();
-
-                            scaledBitmap.recycle();
-                            rotateBitmap.recycle();
-
-
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                                Intent mediaScanIntent = new Intent(
-                                        Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                                Uri contentUri = Uri.fromFile(pictureFile);
-                                mediaScanIntent.setData(contentUri);
-                                getActivity().sendBroadcast(mediaScanIntent);
-                            } else {
-                                getActivity().sendBroadcast(new Intent(
-                                        Intent.ACTION_MEDIA_MOUNTED,
-                                        Uri.parse("file://"
-                                                + Environment.getExternalStorageDirectory())));
-                            }
-
-                            final Location currentLocation = new Location(mCurrentLocation);
-
-                            mGLSurfaceView.queueEvent(new Runnable() {
-                                @Override
-                                public void run() {
-                                    ImageTexture im = new ImageTexture(pictureFile.getAbsolutePath(), currentLocation, mContext);
-                                    //im.rotateAroundCamera(-mCameraAzimuth[2]+180);
-                                    im.mFilename = pictureFile.getName();
-                                    im.rotateAroundCamera(mCameraAzimuth);
-                                    mCameraRenderer.mImageTextures.add(im);
-                                }
-                            });
-
-                            mITset.add(pictureFile.getName());
-
-
-                            BitmapFactory.Options options = new BitmapFactory.Options();
-                            options.inJustDecodeBounds = true;
-                            BitmapFactory.decodeFile(pictureFile.getAbsolutePath(), options);
-                            int aspect_ratio = TextureHelper.getBestAspectRatio(options);
+            });
+        }
+        else{
+            mRatioTabletFrameLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    takePicture();
+                }
+            });
+        }
 
 
 
-                            ContentValues cv = new ContentValues();
-                            cv.put(ImageTextures.COL_FILENAME, pictureFile.getName());
-                            cv.put(ImageTextures.COL_LAT, currentLocation.getLatitude());
-                            cv.put(ImageTextures.COL_LON, currentLocation.getLongitude());
-                            cv.put(ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
-                            cv.put(ImageTextures.COL_ANGLE, mCameraAzimuth);
-                            cv.put(ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
-                            Uri imageTexturesUri = ImageTextures.CONTENT_URI;
-                            mContext.getContentResolver().insert(imageTexturesUri,cv);
-
-                            //TextureHelper.setImageTextureLocation(mContext, pictureFile.getAbsolutePath(), currentLocation);
-
-
-                        } catch (FileNotFoundException e) {
-                            Log.d(LOG_TAG, "File not found: " + e.getMessage());
-                        } catch (IOException e) {
-                            Log.d(LOG_TAG, "Error accessing file: " + e.getMessage());
-                        }
-
-
-                        camera.startPreview();
-                    }
-                });
-
-
-            }
-        });
 
         /*
 
@@ -412,6 +325,113 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         return rootView;
     }
 
+    private void takePicture()
+    {
+        if (mCamera == null || !mIsCameraPermissionGranted || !mIsStoragePermissionGranted || !mIsLocationEnabled || !mIsLocationPermissionGranted)
+        {
+            Log.d(LOG_TAG, "TakePicButton onclick, missing requirement(s)!");
+            Log.d(LOG_TAG, mIsCameraPermissionGranted + " " + mIsStoragePermissionGranted + " " + mIsLocationEnabled + " " + mIsLocationPermissionGranted);
+            return;
+        }
+
+        mCamera.takePicture(null, null, new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] bytes, Camera camera) {
+                final File pictureFile = TextureHelper.getOutputMediaFile(TextureHelper.MEDIA_TYPE_IMAGE);
+
+                if (pictureFile == null)
+                {
+                    Log.d(LOG_TAG, "Error creating media file, check storage permissions... ");
+                    return;
+                }
+
+                try {
+                    FileOutputStream fos = new FileOutputStream(pictureFile);
+
+                    DisplayMetrics displaymetrics = new DisplayMetrics();
+                    Display dp = getActivity().getWindowManager().getDefaultDisplay();
+                    dp.getMetrics(displaymetrics);
+
+                    //float [] adjustedOrientation = adjustAccelOrientation(dp.getRotation(), mOrientation);
+
+
+                    Bitmap scaledBitmap = TextureHelper.decodeSampledBitmapFromBytes(bytes, displaymetrics.widthPixels, displaymetrics.heightPixels);
+
+                    //mDebugTextView.setText("Orientation rotation: " + mOrientationDeg);
+
+                    Bitmap rotateBitmap = rotate(scaledBitmap, mOrientationDeg);
+
+                    rotateBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+
+
+                    //fos.write(bytes);
+                    fos.close();
+
+                    scaledBitmap.recycle();
+                    rotateBitmap.recycle();
+
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                        Intent mediaScanIntent = new Intent(
+                                Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                        Uri contentUri = Uri.fromFile(pictureFile);
+                        mediaScanIntent.setData(contentUri);
+                        getActivity().sendBroadcast(mediaScanIntent);
+                    } else {
+                        getActivity().sendBroadcast(new Intent(
+                                Intent.ACTION_MEDIA_MOUNTED,
+                                Uri.parse("file://"
+                                        + Environment.getExternalStorageDirectory())));
+                    }
+
+                    final Location currentLocation = new Location(mCurrentLocation);
+
+                    mGLSurfaceView.queueEvent(new Runnable() {
+                        @Override
+                        public void run() {
+                            ImageTexture im = new ImageTexture(pictureFile.getAbsolutePath(), currentLocation, mContext);
+                            //im.rotateAroundCamera(-mCameraAzimuth[2]+180);
+                            im.mFilename = pictureFile.getName();
+                            im.rotateAroundCamera(mCameraAzimuth);
+                            mCameraRenderer.mImageTextures.add(im);
+                        }
+                    });
+
+                    mITset.add(pictureFile.getName());
+
+
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inJustDecodeBounds = true;
+                    BitmapFactory.decodeFile(pictureFile.getAbsolutePath(), options);
+                    int aspect_ratio = TextureHelper.getBestAspectRatio(options);
+
+
+
+                    ContentValues cv = new ContentValues();
+                    cv.put(ImageTextures.COL_FILENAME, pictureFile.getName());
+                    cv.put(ImageTextures.COL_LAT, currentLocation.getLatitude());
+                    cv.put(ImageTextures.COL_LON, currentLocation.getLongitude());
+                    cv.put(ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
+                    cv.put(ImageTextures.COL_ANGLE, mCameraAzimuth);
+                    cv.put(ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
+                    Uri imageTexturesUri = ImageTextures.CONTENT_URI;
+                    mContext.getContentResolver().insert(imageTexturesUri,cv);
+
+                    //TextureHelper.setImageTextureLocation(mContext, pictureFile.getAbsolutePath(), currentLocation);
+
+
+                } catch (FileNotFoundException e) {
+                    Log.d(LOG_TAG, "File not found: " + e.getMessage());
+                } catch (IOException e) {
+                    Log.d(LOG_TAG, "Error accessing file: " + e.getMessage());
+                }
+
+
+                camera.startPreview();
+            }
+        });
+    }
+
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
 
@@ -425,7 +445,15 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         super.onResume();
 
         mCameraRenderer.startReadingSensor();
-        mTakePicButton.setVisibility(View.VISIBLE);
+
+        if (!mIsTablet)
+        {
+            mTakePicButton.setVisibility(View.VISIBLE);
+        }
+        else {
+            mRatioTabletFrameLayout.setVisibility(View.VISIBLE);
+        }
+
 
         resolveAllNeededPermissions();
 
@@ -441,8 +469,13 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                 {
                     //Camera dialog
                     Toast.makeText(mContext, R.string.no_access_camera, Toast.LENGTH_LONG);
+                    if (!mIsTablet) {
+                        mTakePicButton.setVisibility(View.INVISIBLE);
+                    }
+                    else {
+                        mRatioTabletFrameLayout.setVisibility(View.INVISIBLE);
+                    }
 
-                    mTakePicButton.setVisibility(View.INVISIBLE);
                     return;
                 }
 
@@ -454,11 +487,21 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
                 setCameraDisplayOrientation(getActivity(), 0, mCamera);
                 mCameraPreview = new CameraPreview(getContext(), mCamera);
-
-
                 mFrameLayout.addView(mCameraPreview);
-                mFrameLayout.removeView(mTakePicButton);
-                mFrameLayout.addView(mTakePicButton);
+
+
+                if (!mIsTablet)
+                {
+                    mFrameLayout.removeView(mTakePicButton);
+                    mFrameLayout.addView(mTakePicButton);
+                }
+                else {
+                    mFrameLayout.removeView(mRatioTabletFrameLayout);
+                    mFrameLayout.addView(mRatioTabletFrameLayout);
+                }
+
+
+
             }
         }
 
@@ -492,9 +535,20 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             mCamera = null;
 
         }
+
+
         mFrameLayout.removeView(mCameraPreview);
-        mFrameLayout.removeView(mTakePicButton);
+
+        if (!mIsTablet)
+        {
+            mFrameLayout.removeView(mTakePicButton);
+        }else{
+            mFrameLayout.removeView(mRatioTabletFrameLayout);
+        }
+
+
         mCameraPreview = null;
+
 
 
 
@@ -854,7 +908,14 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                                 if (mCamera != null && mIsCameraPermissionGranted && mIsStoragePermissionGranted && mIsLocationEnabled && mIsLocationPermissionGranted)
                                 {
                                     Log.d(LOG_TAG, "onResult Location, SUCCESS and TakePicButton visible!");
-                                    mTakePicButton.setVisibility(View.VISIBLE);
+                                    if(!mIsTablet)
+                                    {
+                                        mTakePicButton.setVisibility(View.VISIBLE);
+                                    }
+                                    else{
+                                        mRatioTabletFrameLayout.setVisibility(View.VISIBLE);
+                                    }
+
                                 }
 
                                 Log.d(LOG_TAG, "onResult Location, SUCCESS!");
@@ -870,7 +931,16 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                                 if ( !locSettingsStates.isGpsUsable())
                                 {
                                     mIsLocationEnabled = false;
-                                    mTakePicButton.setVisibility(View.INVISIBLE);
+
+
+                                    if(!mIsTablet)
+                                    {
+                                        mTakePicButton.setVisibility(View.INVISIBLE);
+                                    }
+                                    else{
+                                        mRatioTabletFrameLayout.setVisibility(View.INVISIBLE);
+                                    }
+
                                     Log.d(LOG_TAG, "onResult Location, RESOLUTION_REQUIRED && GPS not usable!");
                                     if (mLocationCheckDialog.getDialog() == null)
                                     {
@@ -884,7 +954,15 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                                 Log.d(LOG_TAG, "onResult Location, SETTINGS_CHANGE_UNAVAILABLE!");
                                 // Location settings are not satisfied. However, we have no way
                                 // to fix the settings so we won't show the dialog.
-                                mTakePicButton.setVisibility(View.INVISIBLE);
+
+                                if(!mIsTablet)
+                                {
+                                    mTakePicButton.setVisibility(View.INVISIBLE);
+                                }else{
+                                    mRatioTabletFrameLayout.setVisibility(View.INVISIBLE);
+                                }
+
+
                                 mIsLocationEnabled = false;
                                 break;
                         }
@@ -899,7 +977,14 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                     if (mCamera != null && mIsCameraPermissionGranted && mIsStoragePermissionGranted && mIsLocationEnabled && mIsLocationPermissionGranted)
                     {
                         Log.d(LOG_TAG, "LocationCallback, onLocationAvailability: location enabled and TakePicButton visible!");
-                        mTakePicButton.setVisibility(View.VISIBLE);
+
+                        if(!mIsTablet)
+                        {
+                            mTakePicButton.setVisibility(View.VISIBLE);
+                        }else{
+                            mRatioTabletFrameLayout.setVisibility(View.VISIBLE);
+                        }
+
                     }
 
                 } else {

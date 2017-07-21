@@ -3,21 +3,22 @@
               android:orientation="vertical"
               android:layout_width="match_parent"
               android:layout_height="match_parent"
-              android:padding="4dp">
+              android:padding="@dimen/widget_layout_padding">
     <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="@dimen/app_bar_height"
         android:background="@color/colorPrimary"
         android:id="@+id/widget_top_bar"
-        android:elevation="2dp">
+        android:elevation="@dimen/app_bar_elevation">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/app_name"
             android:layout_gravity="center"
             android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:textColor="@android:color/white"
             android:fontFamily="sans-serif"
-            android:textSize="28dp"
+            android:textSize="@dimen/widget_title_font_size"
             android:textStyle="normal|bold"
             android:contentDescription="@string/open_app_content"
             />

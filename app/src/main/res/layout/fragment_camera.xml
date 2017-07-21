@@ -1,36 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              android:layout_height="match_parent"
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:keepScreenOn="true"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background_mica"
+    android:id="@+id/camera_framelayout">
+
+    <android.opengl.GLSurfaceView
         android:layout_width="match_parent"
-        android:orientation="vertical"
-        android:keepScreenOn="true">
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:background="@drawable/background_mica"
-        android:id="@+id/camera_framelayout">
+        android:layout_height="match_parent"
+        android:id="@+id/gl_surfaceview"/>
 
-        <android.opengl.GLSurfaceView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/gl_surfaceview"/>
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/take_picture_button_content_description"
+        android:layout_gravity="center_horizontal|bottom"
+        android:layout_marginBottom="@dimen/take_pick_bottom_margin"
+        android:background="@drawable/take_pic_button_statelist"
+        android:id="@+id/take_picture_button"
+        android:focusable="true"/>
+</FrameLayout>
 
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-
-            android:layout_gravity="center_horizontal|bottom"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/take_pic_button_statelist"
-            android:id="@+id/take_picture_button"/>
-
-
-    </FrameLayout>
-
-
-
-</LinearLayout>
 
 

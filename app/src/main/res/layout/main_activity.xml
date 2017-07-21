@@ -14,7 +14,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:elevation="4dp"
+        android:elevation="@dimen/app_bar_elevation"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
 
@@ -42,7 +42,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:gravity="bottom"
-            sothree:umanoShadowHeight="4dp"
+            sothree:umanoShadowHeight="@dimen/app_bar_elevation"
             sothree:umanoFadeColor="@android:color/transparent"
             sothree:umanoAnchorPoint="0.4"
             android:id="@+id/sliding_up_layout">
@@ -51,13 +51,17 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:name="com.google.android.gms.maps.MapFragment"
+                android:focusable="true"
+                android:nextFocusDown="@+id/images_recyclerview"
                 android:id="@+id/map_fragment"/>
 
             <android.support.v7.widget.RecyclerView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center|top"
-                android:id="@+id/images_recyclerview">
+                android:focusable="true"
+                android:nextFocusUp="@id/map_fragment"
+                android:id="@id/images_recyclerview">
 
             </android.support.v7.widget.RecyclerView>
 

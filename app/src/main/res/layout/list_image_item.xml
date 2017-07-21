@@ -8,13 +8,14 @@
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:contentDescription="@string/image_list_item_content_description"
             android:id="@+id/item_imageview"/>
 
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@drawable/check_white_96dp"
-            android:elevation="2dp"
+            android:elevation="@dimen/app_bar_elevation"
             android:layout_gravity="center"
             android:visibility="invisible"
             android:id="@+id/selected_check_imageview"/>

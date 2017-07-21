@@ -27,5 +27,13 @@
     <string name="notification_share_link">Share link</string>
     <string name="notification_success">Successfully uploaded</string>
     <string name="notification_progress">Uploading image...</string>
-    <!-- For Debug activity -->
+
+    <string name="widget_item_content_description">widget list item</string>
+    <string name="image_list_item_content_description">image list item</string>
+    <string name="take_picture_button_content_description">Take a photo</string>
+    <string name="current_location_marker_title">Compass current location</string>
+    <string name="add_new_photo_marker_title">Add photo marker</string>
+    <string name="cluster_item_title">Photo icon</string>
+
+
 </resources>

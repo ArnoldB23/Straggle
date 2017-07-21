@@ -11,7 +11,8 @@ import android.view.View;
 public class CameraActivity extends AppCompatActivity {
 
     private final String LOG_TAG = getClass().getSimpleName();
-    CameraFragment mCameraFragment;
+    private CameraFragment mCameraFragment;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
