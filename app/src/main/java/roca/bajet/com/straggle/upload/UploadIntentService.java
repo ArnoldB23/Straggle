@@ -139,46 +139,6 @@ public class UploadIntentService extends IntentService {
                 });
             }
 
-
-
-
-            /*
-            enqueue(new Callback<PostImageResponse>() {
-                @Override
-                public void onResponse(Call<PostImageResponse> call, Response<PostImageResponse> response) {
-
-                    if (response.isSuccessful())
-                    {
-                        Log.d(LOG_TAG, "postImage onResponse, Successful HTTP response");
-
-                        ContentValues cv = new ContentValues();
-                        cv.put(ContentProviderDbSchema.ImageTextures.COL_URL, response.body().data.link);
-                        cv.put(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH, response.body().data.deletehash);
-
-                        Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
-                        String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                        //String selectionArgs [] = {String.valueOf(id)};
-                        //int updated = mContext.getContentResolver().update(updateIdUri, cv, where, selectionArgs);
-
-                        Log.d(LOG_TAG, "postImage onResponse, updated : " + updated);
-
-                        //mNotificationHelper.createUploadedNotification(response.body().data.link);
-
-                    }else{
-                        Log.d(LOG_TAG, "postImage onResponse, Failed HTTP response, code: " + response.code() + ", " + response.body().data.error);
-                        //mNotificationHelper.createFailedUploadNotification();
-                    }
-                }
-
-                @Override
-                public void onFailure(Call<PostImageResponse> call, Throwable t) {
-                    Log.d(LOG_TAG, "postImage onFailure ");
-                    //mNotificationHelper.createFailedUploadNotification();
-                }
-            });
-
-            */
-
         }
 
         else if(intent.getStringExtra("tag").equals(DELETEIMAGE))

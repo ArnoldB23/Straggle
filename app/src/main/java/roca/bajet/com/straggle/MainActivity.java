@@ -156,8 +156,8 @@ public class MainActivity extends AppCompatActivity implements
     public HashMap<String, ImageBubbleIcon> mITmap;
 
     private OverviewClusterManager<ImageBubbleIcon> mClusterManager;
-    private static final int LOCATION_REQUEST_INTERVAL = 10000;
-    private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
+    private static final int LOCATION_REQUEST_INTERVAL = 1000;
+    private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 500;
     private boolean isConfigurationChange;
 
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 36;

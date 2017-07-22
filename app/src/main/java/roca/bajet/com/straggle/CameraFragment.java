@@ -86,15 +86,17 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         LoaderManager.LoaderCallbacks<Cursor>{
 
     private final String LOG_TAG = getClass().getSimpleName();
-    private static final int ACCURACY_RADIUS = 7; //in meters
-    private static final int TIME_INTERVAL_MINUTES = 1000 * 60 * 2;
+
+    private static final int ACCURACY_RADIUS_M = 7; //in meters
+    private static final int TIME_INTERVAL_MS = 1000 * 60 * 2;
+    private static final int LOCATION_REQUEST_INTERVAL_MS = 1000;
+    private static final int LOCATION_REQUEST_FASTEST_INTERVAL_MS = 100;
+    private static final float SEARCH_RADIUS_M = 145f; //in meters
+
     public static final int LOCATION_PERMISSION_REQUEST_CODE = 12;
     public static final int CAMERA_PERMISSION_REQUEST_CODE = 13;
     public static final int WRITE_STORAGE_PERMISSION_REQUEST_CODE = 14;
     public static final int NEEDED_PERMISSION_REQUEST_CODE = 15;
-    private static final int LOCATION_REQUEST_INTERVAL = 10000;
-    private static final int LOCATION_REQUEST_FASTEST_INTERVAL = 5000;
-    private static final float SEARCH_RADIUS = 145f; //in meters
     private static final int IMAGESEARCH_LOADER = 0;
 
     public boolean mRequestingLocationUpdates = true;
@@ -197,16 +199,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         mCameraRenderer.setOnOrientationCallback(new CameraRenderer.OrientationCallback() {
              @Override
              public void onOrientationChange(int orientation) {
-                 /*
-                 String x = String.format("%+3.2f", orientation[1]);
-                 String y = String.format("%+3.2f", orientation[2]);
-                 String z = String.format("%+3.2f", orientation[3]);
-                 String w = String.format("%+3.2f", orientation[0]);
-
-
-                 String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z + ", W = " +  w;;
-                 mDebugTextView.setText(txt);
-                 */
 
                  if (orientation >= 0)
                  {
@@ -215,20 +207,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
                  //mDebugTextView.setText("Vector Orientation to phone: " + mOrientationDeg);
              }
-             @Override
-             public void onDebugString(String str) {
-
-                 final String fstr = str;
-                 mHandler.post(new Runnable() {
-                     @Override
-                     public void run() {
-
-                         //mDebugTextView.setText(fstr);
-
-                         //Log.d(LOG_TAG, "Debug " + fstr);
-                     }
-                 });
-             }
 
              @Override
              public void onAzimuthOrientationChange(double orientation) {
@@ -236,16 +214,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                  //mDebugTextView.setText("azimuth: " + orientation);
              }
 
-             @Override
-             public void onAccelerometerChange(float[] data) {
-                 String x = String.format("%+3.0f", data[0]);
-                 String y = String.format("%+3.0f", data[1]);
-                 String z = String.format("%+3.0f", data[2]);
-
-                 String txt = "X = " + x + ", Y = " +  y +  ", Z = " +  z;
-                 //mDebugTextView.setText(txt);
-
-             }
          }
         );
 
@@ -255,7 +223,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             mTakePicButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-
                     takePicture();
                 }
             });
@@ -269,49 +236,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
             });
         }
 
-
-
-
-        /*
-
-        mCameraPreview.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View view) {
-
-
-                    File directory = new File(Environment.getExternalStoragePublicDirectory(
-                            Environment.DIRECTORY_PICTURES), "Straggle");
-                    File[] files = directory.listFiles();
-                    for(int i = 0; files != null && i < files.length; i++)
-                    {
-                        if(files[i].delete())
-                        {
-                            Log.d(LOG_TAG, "Successfully deleted: " + files[i].getAbsolutePath());
-                        }
-                        else{
-                            Log.d(LOG_TAG, "Failed to delete: " + files[i].getAbsolutePath());
-                        }
-                    }
-
-                    int deleteCount = mContext.getContentResolver().delete(ImageTextures.CONTENT_URI,null,null);
-                    Log.d(LOG_TAG, "Contentresolver delete:  " + deleteCount);
-
-                    mGLSurfaceView.queueEvent(new Runnable() {
-                        @Override
-                        public void run() {
-                            mCameraRenderer.mImageTextures.clear();
-                        }
-                    });
-
-                    mITset.clear();
-
-
-                return false;
-            }
-        });
-
-
-        */
 
         // Create an instance of GoogleAPIClient.
         if (mGoogleApiClient == null) {
@@ -390,7 +314,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                         @Override
                         public void run() {
                             ImageTexture im = new ImageTexture(pictureFile.getAbsolutePath(), currentLocation, mContext);
-                            //im.rotateAroundCamera(-mCameraAzimuth[2]+180);
                             im.mFilename = pictureFile.getName();
                             im.rotateAroundCamera(mCameraAzimuth);
                             mCameraRenderer.mImageTextures.add(im);
@@ -460,9 +383,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         if (mIsCameraPermissionGranted && mIsLocationPermissionGranted && mIsStoragePermissionGranted)
         {
             if (mCamera == null && checkCameraHardware(mContext)) {
-                //mCamera = getCameraInstance();
-                //setCameraDisplayOrientation(getActivity(), 0, mCamera);
-                //mCameraPreview.mCamera = mCamera;
+
                 mCamera = getCameraInstance();
 
                 if (mCamera ==  null)
@@ -499,17 +420,8 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
                     mFrameLayout.removeView(mRatioTabletFrameLayout);
                     mFrameLayout.addView(mRatioTabletFrameLayout);
                 }
-
-
-
             }
         }
-
-
-
-
-
-
 
     }
 
@@ -528,14 +440,12 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         mCameraRenderer.stopReadingSensor();
 
 
-
         if (mCamera != null) {
             mCamera.stopPreview();
             mCamera.release();
             mCamera = null;
 
         }
-
 
         mFrameLayout.removeView(mCameraPreview);
 
@@ -618,33 +528,6 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         }
     }
 
-    public boolean resolveCameraPermission(){
-
-        if (ActivityCompat.checkSelfPermission(getContext(), android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED)
-        {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{android.Manifest.permission.CAMERA}, LOCATION_PERMISSION_REQUEST_CODE);
-            return false;
-        }
-        else{
-            mIsCameraPermissionGranted = true;
-            return true;
-        }
-
-    }
-
-    public boolean resolveStoragePermission(){
-
-        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-        {
-            ActivityCompat.requestPermissions(getActivity(), new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, WRITE_STORAGE_PERMISSION_REQUEST_CODE);
-            return false;
-        }
-        else{
-            mIsStoragePermissionGranted = true;
-            return true;
-        }
-
-    }
 
     public void resolveAllNeededPermissions() {
         ArrayList<String> permissionList = new ArrayList<>();
@@ -745,15 +628,15 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
         // Check whether the new location fix is newer or older
         long timeDelta = location.getTime() - currentBestLocation.getTime();
-        boolean isSignificantlyNewer = timeDelta > TIME_INTERVAL_MINUTES;
-        boolean isSignificantlyOlder = timeDelta < -TIME_INTERVAL_MINUTES;
+        boolean isSignificantlyNewer = timeDelta > TIME_INTERVAL_MS;
+        boolean isSignificantlyOlder = timeDelta < -TIME_INTERVAL_MS;
         boolean isNewer = timeDelta > 0;
 
-        // If it's been more than two minutes since the current location, use the new location
+        // If it's been more than TIME_INTERVAL_MS since the current location, use the new location
         // because the user has likely moved
         if (isSignificantlyNewer) {
             return true;
-            // If the new location is more than two minutes older, it must be worse
+            // If the new location is more than TIME_INTERVAL_MS older, it must be worse
         } else if (isSignificantlyOlder) {
             return false;
         }
@@ -762,7 +645,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         int accuracyDelta = (int) (location.getAccuracy() - currentBestLocation.getAccuracy());
         boolean isLessAccurate = accuracyDelta > 0;
         boolean isMoreAccurate = accuracyDelta < 0;
-        boolean isSignificantlyLessAccurate = accuracyDelta > ACCURACY_RADIUS;
+        boolean isSignificantlyLessAccurate = accuracyDelta > ACCURACY_RADIUS_M;
 
         // Check if the old and new location are from the same provider
         boolean isFromSameProvider = isSameProvider(location.getProvider(),
@@ -771,12 +654,13 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         // Determine location quality using a combination of timeliness and accuracy
 
 
+        /*
         if (isMoreAccurate && isNewer) {
             return true;
         }
+        */
 
 
-        /*
         if (isMoreAccurate) {
             return true;
         }
@@ -785,7 +669,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         } else if (isNewer && !isSignificantlyLessAccurate && isFromSameProvider) {
             return true;
         }
-        */
+
 
 
         return false;
@@ -822,7 +706,7 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
     }
 
-    long prevtime = System.currentTimeMillis();
+    //long prevtime = System.currentTimeMillis();
     @Override
     public void onLocationChanged(Location location) {
 
@@ -830,36 +714,25 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
         {
 
             mCurrentLocation = location;
-            mCurrentLocation.getTime();
-            long currentTime = System.currentTimeMillis();
+            //mCurrentLocation.getTime();
+            //long currentTime = System.currentTimeMillis();
 
-            /*
-            mDebugTextView.setText("new mCurrentLocation: " + String.format("%3.7f",mCurrentLocation.getLatitude())
-                    + ", " + String.format("%3.7f",mCurrentLocation.getLongitude())
-                    + "\nAccuracy: " + String.format("%3.7f",mCurrentLocation.getAccuracy())
-                    + "\nTime elapsed: " +  String.valueOf((double)(currentTime - prevtime)/1000) );
-            */
-            prevtime = currentTime;
 
-            mCameraRenderer.mNewCameraLocation.add(mCurrentLocation);
+            //prevtime = currentTime;
+
+            mCameraRenderer.mNewCameraLocation = mCurrentLocation;
 
             //File imageFile = new File (Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)+ File.separator + "Straggle", filename);
             //ImageTexture im = new ImageTexture(imageFile.getAbsolutePath(), mCurrentLocation, mContext);
             getLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, this);
         }
 
-        //mCurrentLocation = location;
-
-        double latitude = location.getLatitude();
-        double longitude = location.getLongitude();
-
-        //Log.d(LOG_TAG, "onLocationChanged: " + String.format("%3.6f", latitude) + ", " + String.format("%3.6f", longitude));
     }
 
     protected void createLocationRequest() {
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(LOCATION_REQUEST_INTERVAL);
-        mLocationRequest.setFastestInterval(LOCATION_REQUEST_FASTEST_INTERVAL);
+        mLocationRequest.setInterval(LOCATION_REQUEST_INTERVAL_MS);
+        mLocationRequest.setFastestInterval(LOCATION_REQUEST_FASTEST_INTERVAL_MS);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
@@ -1102,9 +975,9 @@ public class CameraFragment extends Fragment implements GoogleApiClient.Connecti
 
                 Log.d(LOG_TAG, "onLoadFinished: distance = " + distance[0]) ;
 
-                if (distance[0] > SEARCH_RADIUS)
+                if (distance[0] > SEARCH_RADIUS_M)
                 {
-                    Log.d(LOG_TAG, "onLoadFinished: distance > " + SEARCH_RADIUS) ;
+                    Log.d(LOG_TAG, "onLoadFinished: distance > " + SEARCH_RADIUS_M) ;
                     break;
                 }
 

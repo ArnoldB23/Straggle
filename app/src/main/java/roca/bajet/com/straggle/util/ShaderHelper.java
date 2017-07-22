@@ -4,6 +4,7 @@ package roca.bajet.com.straggle.util;
  * Created by Arnold on 2/8/2017.
  */
 
+
 import android.util.Log;
 
 import static android.opengl.GLES20.GL_COMPILE_STATUS;

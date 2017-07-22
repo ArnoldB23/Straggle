@@ -11,7 +11,6 @@ import android.opengl.GLSurfaceView;
 import android.util.Log;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
@@ -59,9 +58,11 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
     public float[] orientation = new float[3];
 
-    public float mHorizontalViewAngle;
-    public LinkedList<Location> mNewCameraLocation;
-    public Location mCurrentCameraLocation;
+
+
+    private Location mCurrentCameraLocation;
+    public Location mNewCameraLocation;
+    private Location mTargetCameraLocation;
 
     private TextureShaderProgram mTextureShaderProgram;
     public ArrayList<ImageTexture> mImageTextures;
@@ -80,9 +81,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     public interface OrientationCallback
     {
         void onOrientationChange(int orientation);
-        void onDebugString(String str);
         void onAzimuthOrientationChange(double orientation);
-        void onAccelerometerChange(float [] data);
     }
 
     public void setOnOrientationCallback(OrientationCallback callback)
@@ -108,7 +107,6 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         rotateM(modelSensorMatrix, 0, 90, 1, 0, 0);
 
         mImageTextures = new ArrayList<>();
-        mNewCameraLocation = new LinkedList<>();
 
 
         //mCurrentCameraLocation = new Location(LocationManager.GPS_PROVIDER);
@@ -184,50 +182,70 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         Location drawCameraLocation;
 
         //Don't draw until camera location is known
-        if(mCurrentCameraLocation == null && mNewCameraLocation.isEmpty())
+        if(mCurrentCameraLocation == null && mNewCameraLocation == null)
         {
+            //Log.d(LOG_TAG, "onDraw 1");
             return;
         }
 
-        if (mCurrentCameraLocation == null && !mNewCameraLocation.isEmpty())
+        else if (mCurrentCameraLocation == null && mNewCameraLocation != null)
         {
-            mCurrentCameraLocation = mNewCameraLocation.remove();
+            //Log.d(LOG_TAG, "onDraw 2");
+            mCurrentCameraLocation = mNewCameraLocation;
             drawCameraLocation = mCurrentCameraLocation;
         }
 
-        //Provide intermittent location (if necessary) for smooth changes in camera positions
-        else if (!mNewCameraLocation.isEmpty() && mCurrentCameraLocation.getLongitude() != mNewCameraLocation.peek().getLongitude()
-                && mCurrentCameraLocation.getLatitude() != mNewCameraLocation.peek().getLatitude())
+        else if (mCurrentCameraLocation != null && mNewCameraLocation != null && mTargetCameraLocation == null)
         {
-            float cameraDistance = mCurrentCameraLocation.distanceTo(mNewCameraLocation.peek());
+            //Log.d(LOG_TAG, "onDraw 3");
+
+            float distance = mNewCameraLocation.distanceTo(mCurrentCameraLocation);
+
+            ///Increment step to target location when new camera location
+            // is greater than 1.5 meters from current location
+            if (distance > 1.5f)
+            {
+                mTargetCameraLocation = mNewCameraLocation;
+            }
+
+            drawCameraLocation = mCurrentCameraLocation;
+        }
+
+        //Provide increment location (if necessary) for smooth changes in camera positions
+        else if (mCurrentCameraLocation != null && mTargetCameraLocation != null)
+        {
+            //Log.d(LOG_TAG, "onDraw 4");
+            float cameraDistance = mCurrentCameraLocation.distanceTo(mTargetCameraLocation);
 
 
             float x = (float)mCameraStep/TOTALCAMERASTEPS;
-            float y = (float)Math.pow(x,3)*(x*(6*x-15)+10);
-            //float y = (float)Math.pow(x,2)*(3-2*x);
-            //float y = x;
+            //float y = (float)Math.pow(x,3)*(x*(6*x-15)+10);
+            //float y = (float)Math.pow(x,2)*(3-2*x); //smoothstep
+            float y = x;
 
             float incDistance = y * cameraDistance;
-            float bearing = mCurrentCameraLocation.bearingTo(mNewCameraLocation.peek());
+            float bearing = mCurrentCameraLocation.bearingTo(mTargetCameraLocation);
 
             bearing = (bearing +360)%360;
 
             drawCameraLocation = calculateDestinationLocation(mCurrentCameraLocation, bearing, incDistance);
-            drawCameraLocation.setAccuracy(mNewCameraLocation.peek().getAccuracy());
+            drawCameraLocation.setAccuracy(mTargetCameraLocation.getAccuracy());
 
             mCameraStep++;
 
-            if (mCameraStep == TOTALCAMERASTEPS+1)
+            if (mCameraStep == TOTALCAMERASTEPS)
             {
-                mCurrentCameraLocation = mNewCameraLocation.remove();
+                //mCurrentCameraLocation = mTargetCameraLocation;
+                mCurrentCameraLocation = drawCameraLocation;
+                mTargetCameraLocation = null;
                 mCameraStep = 0;
             }
         }
-        else{
+        else {//Never should come to this
+            Log.d(LOG_TAG, "onDraw 5");
+
             drawCameraLocation = mCurrentCameraLocation;
         }
-
-
 
         /*
         setLookAtM(viewMatrix, 0, viewValues[0], viewValues[1], viewValues[2]
@@ -240,21 +258,21 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         multiplyMM(viewProjectionMatrix, 0, projectionMatrix, 0, viewMatrix, 0);
 
 
-
+        //Process each image texture with drawCameraLocation
         for(ImageTexture it : mImageTextures) {
 
-            //double distance = 3;
-            double ItAngle;
 
             if (it == null)
             {
                 return;
             }
 
+            double ItAngle;
             double distance = drawCameraLocation.distanceTo(it.mLocation);
 
 
 
+            /*
             if (distance > (drawCameraLocation.getAccuracy() /0.68f))
             {
                 ItAngle = (drawCameraLocation.bearingTo(it.mLocation) + 360) % 360;
@@ -267,19 +285,29 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
                 distance = 4;
             }
 
+            */
 
+            ItAngle = (drawCameraLocation.bearingTo(it.mLocation) + 360) % 360;
+
+
+            if (distance != 0 || ItAngle != 0.0f){
+                it.rotateAroundCamera((float) ItAngle );
+                it.moveFromToCamera((float)-distance * 0.79f);
+            }
+
+
+
+            Log.d(LOG_TAG, "onDrawFrame: distance = " + distance + " > " + (drawCameraLocation.getAccuracy() /0.68f)  +  ", ItAngle = " +ItAngle  );
+            Log.d(LOG_TAG, "onDrawFrame: drawCameraLocation = " + drawCameraLocation.getLatitude() + ", " + drawCameraLocation.getLongitude()
+            + "   " + it.mLocation.getLatitude() + ", " + it.mLocation.getLongitude());
 
 
             String debugStr = "Camera: " +  String.format("%5.6f",drawCameraLocation.getLatitude()) + ", " + String.format("%5.6f",drawCameraLocation.getLongitude())
                     + "\nAccuracy: " + String.format("%5.7f",drawCameraLocation.getAccuracy()) + ", Z: " +  String.format("%3.1f", mAzimuth)
                     //+ "\nImage: " + String.format("%5.7f",it.mLocation.getLatitude()) + ", " + String.format("%5.7f",it.mLocation.getLongitude())
                     + "\nDistance: " + String.format("%5.5f", distance) + ", ItAngle: " + String.format("%3.7f", it.mCameraRotationAngle);
-            if (mOrientationCallback != null)
-            {
-                mOrientationCallback.onDebugString(debugStr);
-            }
 
-            it.moveFromToCamera((float)-distance * 0.79f);
+
 
             float[] modelMatrix = it.calculateModelMatrix();
             multiplyMM(modelViewProjectionMatrix, 0, viewProjectionMatrix, 0, modelMatrix, 0);
@@ -301,16 +329,6 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     public void stopReadingSensor()
     {
         mSensorManager.unregisterListener(this);
-
-        /*
-        for (ImageTexture it : mImageTextures)
-        {
-            ContentValues cv = new ContentValues();
-            cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, it.mCameraRotationAngle);
-            Uri imageTextureUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithFileName(it.mFilename);
-            mContext.getContentResolver().update(imageTextureUri,cv, null, null);
-        }
-        */
 
 
     }
