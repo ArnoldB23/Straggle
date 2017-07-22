@@ -4,12 +4,14 @@
               android:layout_width="match_parent"
               android:layout_height="match_parent"
               android:padding="@dimen/widget_layout_padding">
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="@dimen/app_bar_height"
         android:background="@color/colorPrimary"
         android:id="@+id/widget_top_bar"
         android:elevation="@dimen/app_bar_elevation">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

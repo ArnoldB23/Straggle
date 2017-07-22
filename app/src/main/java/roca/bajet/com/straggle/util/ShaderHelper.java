@@ -73,9 +73,9 @@ public class ShaderHelper {
                 compileStatus, 0);
 
 
-            // Print the shader info log to the Android log output.
-            Log.v(TAG, "Results of compiling source:" + "\n" + shaderCode
-                    + "\n:" + glGetShaderInfoLog(shaderObjectId));
+        // Print the shader info log to the Android log output.
+        Log.v(TAG, "Results of compiling source:" + "\n" + shaderCode
+                + "\n:" + glGetShaderInfoLog(shaderObjectId));
 
 
         // Verify the compile status.
@@ -124,11 +124,11 @@ public class ShaderHelper {
                 linkStatus, 0);
 
 
-            // Print the program info log to the Android log output.
-            Log.v(
-                    TAG,
-                    "Results of linking program:\n"
-                            + glGetProgramInfoLog(programObjectId));
+        // Print the program info log to the Android log output.
+        Log.v(
+                TAG,
+                "Results of linking program:\n"
+                        + glGetProgramInfoLog(programObjectId));
 
 
         // Verify the link status.

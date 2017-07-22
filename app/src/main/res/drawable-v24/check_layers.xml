@@ -4,7 +4,8 @@
     <item>
         <color android:color="@color/colorSelectItem"/>
     </item>
-    <item android:drawable="@drawable/check_white_96dp"
+    <item
+        android:drawable="@drawable/check_white_96dp"
         android:gravity="center"
         android:top="24dp"
         android:bottom="24dp"

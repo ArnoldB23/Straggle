@@ -39,8 +39,7 @@ public class VertexArray {
         floatBuffer.position(0);
     }
 
-    public int getVertexArraySize()
-    {
+    public int getVertexArraySize() {
         return size;
     }
 }

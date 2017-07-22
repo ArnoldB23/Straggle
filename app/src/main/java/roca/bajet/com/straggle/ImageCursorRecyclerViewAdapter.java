@@ -68,7 +68,6 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     public static final String LOG_TAG = "ImageCursorAdapter";
 
 
-
     private MultiSelector mMultiSelector = new MultiSelector();
     private ModalMultiSelectorCallback mActionModeCallback
             = new ModalMultiSelectorCallback(mMultiSelector) {
@@ -85,12 +84,10 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
             mActionMode = actionMode;
 
             MenuItem selectAllItem = menu.findItem(R.id.action_select_all);
-            if (toggleSelectAll)
-            {
+            if (toggleSelectAll) {
 
                 selectAllItem.setIcon(mContext.getDrawable(R.drawable.cancel_icon_48));
-            }
-            else{
+            } else {
 
                 selectAllItem.setIcon(mContext.getDrawable(R.drawable.select_all_icon_48));
             }
@@ -99,27 +96,22 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         }
 
         @Override
-        public boolean onPrepareActionMode(ActionMode mode, Menu menu)
-        {
-            return super.onPrepareActionMode(mode,menu);
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return super.onPrepareActionMode(mode, menu);
         }
 
         @Override
         public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
 
 
-
-            switch (item.getItemId())
-            {
+            switch (item.getItemId()) {
                 case R.id.action_select_all:
 
                     toggleSelectAll = !toggleSelectAll;
 
-                    if (toggleSelectAll)
-                    {
+                    if (toggleSelectAll) {
                         mCursor.moveToPosition(-1);
-                        while (mCursor.moveToNext())
-                        {
+                        while (mCursor.moveToNext()) {
                             Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
                             String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
 
@@ -130,8 +122,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                         item.setIcon(mContext.getDrawable(R.drawable.cancel_icon_48));
 
                         Log.d(LOG_TAG, "Action Select All, count: " + mMultiSelector.getSelectedPositions().size());
-                    }
-                    else{
+                    } else {
 
                         mFileNameListId.clear();
                         mMultiSelector.clearSelections();
@@ -146,8 +137,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                     Log.d(LOG_TAG, "Action Share, count: " + mMultiSelector.getSelectedPositions().size());
 
-                    if (mFileNameListId.size() == 1)
-                    {
+                    if (mFileNameListId.size() == 1) {
                         Set<Map.Entry<Long, String>> setSentry = mFileNameListId.entrySet();
                         Map.Entry<Long, String> singleEntry = setSentry.iterator().next();
 
@@ -159,14 +149,11 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                         shareIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(mediaFile));
                         shareIntent.setType("image/*");
                         mContext.startActivity(Intent.createChooser(shareIntent, mContext.getResources().getText(R.string.send_to_single)));
-                    }
-                    else if (mFileNameListId.size() > 1)
-                    {
+                    } else if (mFileNameListId.size() > 1) {
                         ArrayList<Uri> imageUris = new ArrayList<>();
 
 
-                        for (Map.Entry<Long, String> entry : mFileNameListId.entrySet())
-                        {
+                        for (Map.Entry<Long, String> entry : mFileNameListId.entrySet()) {
                             String filename = entry.getValue();
                             File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
 
@@ -188,16 +175,14 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                 case R.id.action_delete:
 
-                    for (Integer position : mMultiSelector.getSelectedPositions())
-                    {
+                    for (Integer position : mMultiSelector.getSelectedPositions()) {
 
                         mCursor.moveToPosition(position);
                         final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
                         String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
                         File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
 
-                        if (mediaFile.exists())
-                        {
+                        if (mediaFile.exists()) {
                             mediaFile.delete();
                         }
 
@@ -206,8 +191,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                         //mImgurService todo:
 
-                        if (deletehash != null)
-                        {
+                        if (deletehash != null) {
                             mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGE);
                             mUploadServiceIntent.putExtra(UploadIntentService.DELETEIMAGE, deletehash);
                             mContext.startService(mUploadServiceIntent);
@@ -251,11 +235,10 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                         Uri deleteIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(DEFAULT_USER_ID);
                         String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                        String selectionArgs [] = {String.valueOf(id)};
+                        String selectionArgs[] = {String.valueOf(id)};
                         int deleted = mContext.getContentResolver().delete(deleteIdUri, where, selectionArgs);
 
                         Log.d(LOG_TAG, "Action Delete, deleting position: " + position + ", success: " + deleted);
-
 
 
                         notifyItemChanged(position);
@@ -272,18 +255,14 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                 case R.id.action_upload:
 
 
-
-                    for (Integer position : mMultiSelector.getSelectedPositions())
-                    {
+                    for (Integer position : mMultiSelector.getSelectedPositions()) {
                         mCursor.moveToPosition(position);
                         final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
 
                         String url = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_URL));
 
 
-
-                        if (url == null)
-                        {
+                        if (url == null) {
                             String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
 
                             //todo: mImgurService
@@ -293,15 +272,11 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                             mContext.startService(mUploadServiceIntent);
                         }
                         //URL already exists
-                        else{
+                        else {
 
                             Log.d(LOG_TAG, "postImage URL already exists");
                             mNotificationHelper.createUploadedNotification(url);
                         }
-
-
-
-
 
 
                     }
@@ -316,8 +291,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
                 case R.id.action_upload_delete:
 
-                    for (Integer position : mMultiSelector.getSelectedPositions())
-                    {
+                    for (Integer position : mMultiSelector.getSelectedPositions()) {
                         mCursor.moveToPosition(position);
                         final Long id = mCursor.getLong(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
 
@@ -325,14 +299,13 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                         String deletehash = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
 
 
-                        if (url == null)
-                        {
+                        if (url == null) {
                             Log.d(LOG_TAG, "Delete Image URL doesn't exist");
                             break;
 
                         }
                         //URL already exists
-                        else{
+                        else {
 
                             //todo: mImgurService
                             mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGEANDRECORD);
@@ -341,10 +314,6 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                             mContext.startService(mUploadServiceIntent);
 
                         }
-
-
-
-
 
 
                     }
@@ -362,8 +331,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         }
 
         @Override
-        public void onDestroyActionMode(ActionMode mode)
-        {
+        public void onDestroyActionMode(ActionMode mode) {
             super.onDestroyActionMode(mode);
 
             mMultiSelector.clearSelections();
@@ -381,7 +349,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         mContext = context;
 
         mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
-        mUploadServiceIntent = new Intent (mContext, UploadIntentService.class);
+        mUploadServiceIntent = new Intent(mContext, UploadIntentService.class);
         mNotificationHelper = new UploadNotificationHelper(mContext);
 
     }
@@ -413,17 +381,13 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         viewHolder.aspect_ratio = data.getInt(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO));
 
 
-
-        if (viewHolder.aspect_ratio <= TextureHelper.ARATIO_9X16)
-        {
+        if (viewHolder.aspect_ratio <= TextureHelper.ARATIO_9X16) {
             viewHolder.mImageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             //Picasso.with(mContext).load(mediaFile).into(viewHolder.mImageView);
 
             Glide.with(mContext).load(mediaFile).into(viewHolder.mImageView)
                     .onLoadFailed(mContext.getDrawable(R.drawable.placeholder));
-        }
-        else
-        {
+        } else {
             viewHolder.mImageView.setScaleType(ImageView.ScaleType.FIT_CENTER);
             //Picasso.with(mContext).load(mediaFile).into(viewHolder.mImageView);
             Glide.with(mContext).load(mediaFile).into(viewHolder.mImageView)
@@ -431,19 +395,18 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         }
 
 
-
     }
+
     @Override
     public int getItemViewType(int position) {
 
-        if (mCursor.moveToPosition(position))
-        {
+        if (mCursor.moveToPosition(position)) {
             String filename = mCursor.getString(mCursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
             File mediaFile = new File(mediaStorageDir.getPath() + File.separator + filename);
 
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile( mediaFile.getAbsolutePath(), options);
+            BitmapFactory.decodeFile(mediaFile.getAbsolutePath(), options);
 
 
             int aratioNum = TextureHelper.getBestAspectRatio(options);
@@ -461,33 +424,27 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
             }
 
             */
-        }
-        else{
+        } else {
             return INVALID_VIEW_TYPE;
         }
 
     }
 
 
-
-
-
-    public void onSaveInstanceState(Bundle outstate)
-    {
+    public void onSaveInstanceState(Bundle outstate) {
         outstate.putSerializable(FILE_NAME_LIST_ID_KEY, mFileNameListId);
         outstate.putBoolean(TOGGLE_SELECT_ALL_KEY, toggleSelectAll);
         Bundle multiSelState = mMultiSelector.saveSelectionStates();
         outstate.putAll(multiSelState);
     }
 
-    public void onRestoreInstanceState(Bundle savedInstanceState){
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
         toggleSelectAll = savedInstanceState.getBoolean(TOGGLE_SELECT_ALL_KEY);
 
 
         mMultiSelector.restoreSelectionStates(savedInstanceState);
 
-        if (mMultiSelector.isSelectable())
-        {
+        if (mMultiSelector.isSelectable()) {
             ((AppCompatActivity) mContext).startSupportActionMode(mActionModeCallback);
         }
         mMultiSelector.restoreSelectionStates(savedInstanceState);
@@ -497,23 +454,19 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
 
     }
 
-    public void closeContextActionMenu()
-    {
+    public void closeContextActionMenu() {
         mMultiSelector.clearSelections();
         mFileNameListId.clear();
         notifyDataSetChanged();
 
-        if (mMultiSelector.isSelectable())
-        {
+        if (mMultiSelector.isSelectable()) {
             mActionMode.finish();
         }
 
     }
 
-    public boolean isContextActionMenu()
-    {
-        if (mMultiSelector.isSelectable())
-        {
+    public boolean isContextActionMenu() {
+        if (mMultiSelector.isSelectable()) {
             return true;
         }
 
@@ -521,7 +474,7 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     }
 
 
-    public class ViewHolder extends SwappingHolder implements View.OnLongClickListener, View.OnClickListener{
+    public class ViewHolder extends SwappingHolder implements View.OnLongClickListener, View.OnClickListener {
 
         private final String LOG_TAG = "ViewHolder";
 
@@ -561,12 +514,9 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
                 mMultiSelector.setSelected(ViewHolder.this, true);
 
 
-
-
                 mFileNameListId.put(id, filename);
 
                 //mSelectedCheckImageView.setVisibility(View.VISIBLE);
-                //mCardView.setForeground(mContext.getResources().getDrawable(R.color.colorSelectItem));
 
 
                 return true;
@@ -578,23 +528,21 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         public void onClick(View view) {
             Log.d(LOG_TAG, "onClick");
 
-            if (mMultiSelector.tapSelection(ViewHolder.this)){
+            if (mMultiSelector.tapSelection(ViewHolder.this)) {
 
-                if (mMultiSelector.isSelected(getAdapterPosition(), id))
-                {
+                if (mMultiSelector.isSelected(getAdapterPosition(), id)) {
                     Log.d(LOG_TAG, "onClick, selected id: " + id);
                     mFileNameListId.put(id, filename);
                     //mSelectedCheckImageView.setVisibility(View.VISIBLE);
 
-                }
-                else{
+                } else {
                     Log.d(LOG_TAG, "onClick, unselected id: " + id);
                     mFileNameListId.remove(id);
                     //mSelectedCheckImageView.setVisibility(View.INVISIBLE);
                 }
             }
             //Not in selectable mode
-            else{
+            else {
                 Log.d(LOG_TAG, "onClick, normal mode");
 
             }

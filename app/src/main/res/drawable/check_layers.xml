@@ -4,10 +4,10 @@
     <item>
         <color android:color="@color/colorSelectItem"/>
     </item>
-    <item >
-    <bitmap
-        android:src="@drawable/ok_icon_96"
-        android:gravity="center"/>
+    <item>
+        <bitmap
+            android:src="@drawable/ok_icon_96"
+            android:gravity="center"/>
     </item>
 
 </layer-list>

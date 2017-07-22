@@ -70,11 +70,10 @@ public class ImageBubbleIconRenderer extends DefaultClusterRenderer<ImageBubbleI
 
         ArrayList<Drawable> bitmaps = new ArrayList<>(Math.min(4, cluster.getSize()));
 
-        for (ImageBubbleIcon bubbleIcon : cluster.getItems())
-        {
+        for (ImageBubbleIcon bubbleIcon : cluster.getItems()) {
             if (bitmaps.size() == 4) break;
             BitmapDrawable d = new BitmapDrawable(mContext.getResources(), bubbleIcon.mBitmap);
-            d.setBounds(0,0,width,height);
+            d.setBounds(0, 0, width, height);
             bitmaps.add(d);
         }
 
@@ -91,7 +90,6 @@ public class ImageBubbleIconRenderer extends DefaultClusterRenderer<ImageBubbleI
         markerOptions.snippet("Photo cluster of " + String.valueOf(bitmaps.size()));
 
     }
-
 
 
     @Override

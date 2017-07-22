@@ -3,13 +3,13 @@
              android:layout_width="match_parent"
              android:layout_height="@dimen/widget_item_height">
 
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="center_vertical|center_horizontal"
-                android:scaleType="centerCrop"
-                android:contentDescription="@string/widget_item_content_description"
-                android:id="@+id/image_item"/>
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:scaleType="centerCrop"
+        android:contentDescription="@string/widget_item_content_description"
+        android:id="@+id/image_item"/>
 
 
 </FrameLayout>

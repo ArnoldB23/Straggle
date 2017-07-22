@@ -30,7 +30,7 @@ public class StraggleRemoteViewService extends RemoteViewsService {
 
     private Cursor data = null;
     private static final String LOG_TAG = "RemoteViewService";
-    public static float SEARCH_RADIUS =  5000; //5km
+    public static float SEARCH_RADIUS = 5000; //5km
     private ArrayList<String> mIdList;
     private int mDefaultUser;
     private Uri imageUri;
@@ -53,7 +53,6 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                 mIdList = new ArrayList<>();
 
 
-
                 String sel = ContentProviderDbSchema.Users.COL_USERNAME + " = 'DEFAULT_USER'";
                 Cursor c = getContentResolver().query(ContentProviderDbSchema.Users.CONTENT_URI, null, sel, null, null);
                 if (c.moveToFirst()) {
@@ -70,15 +69,14 @@ public class StraggleRemoteViewService extends RemoteViewsService {
 
                 Log.d(LOG_TAG, "onDataSetChanged...");
 
-                if ( data != null )
-                {
+                if (data != null) {
                     data.close();
                 }
 
                 final long identityToken = Binder.clearCallingIdentity();
 
-                String [] locationColumns = new String [] {ContentProviderDbSchema.CurrentLocation.COL_LAT, ContentProviderDbSchema.CurrentLocation.COL_LON};
-                Cursor locationCursor = getContentResolver().query(ContentProviderDbSchema.CurrentLocation.CONTENT_URI, locationColumns , null, null, null);
+                String[] locationColumns = new String[]{ContentProviderDbSchema.CurrentLocation.COL_LAT, ContentProviderDbSchema.CurrentLocation.COL_LON};
+                Cursor locationCursor = getContentResolver().query(ContentProviderDbSchema.CurrentLocation.CONTENT_URI, locationColumns, null, null, null);
 
                 locationCursor.moveToFirst();
 
@@ -86,13 +84,12 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                 Double currentLon = locationCursor.getDouble(locationCursor.getColumnIndex(ContentProviderDbSchema.CurrentLocation.COL_LON));
                 locationCursor.close();
 
-                if (currentLat != null && currentLon != null)
-                {
+                if (currentLat != null && currentLon != null) {
                     Location currentLocation = new Location(LocationManager.GPS_PROVIDER);
                     currentLocation.setLongitude(currentLon);
                     currentLocation.setLatitude(currentLat);
 
-                    double fudge = Math.pow(Math.cos(Math.toRadians(currentLat)),2);
+                    double fudge = Math.pow(Math.cos(Math.toRadians(currentLat)), 2);
 
 
                     String orderby = "( (" + currentLat + " - " + ContentProviderDbSchema.ImageTextures.COL_LAT + ") * (" + currentLat + " - " + ContentProviderDbSchema.ImageTextures.COL_LAT + ") + (" +
@@ -104,27 +101,27 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                     Location wLoc = CameraRenderer.calculateDestinationLocation(currentLocation, 270, SEARCH_RADIUS);
                     Location eLoc = CameraRenderer.calculateDestinationLocation(currentLocation, 90, SEARCH_RADIUS);
 
-                    double decDegrees = (SEARCH_RADIUS * 0.01f)/1113.2f;
+                    double decDegrees = (SEARCH_RADIUS * 0.01f) / 1113.2f;
 
                     double nLat = (currentLat + decDegrees);
                     double sLat = (currentLat - decDegrees);
 
-                    String selection = ContentProviderDbSchema.ImageTextures.COL_LON + " > " + wLoc.getLongitude() + " AND " +  ContentProviderDbSchema.ImageTextures.COL_LON + " < " + eLoc.getLongitude() +
+                    String selection = ContentProviderDbSchema.ImageTextures.COL_LON + " > " + wLoc.getLongitude() + " AND " + ContentProviderDbSchema.ImageTextures.COL_LON + " < " + eLoc.getLongitude() +
                             " AND " + ContentProviderDbSchema.ImageTextures.COL_LAT + " > " + sLat + " AND " + ContentProviderDbSchema.ImageTextures.COL_LAT + " < " + nLat;
 
 
                     Log.d(LOG_TAG, "onDataSetChanged, selection = " + selection);
-                    Log.d(LOG_TAG, "onDataSetChanged, p1 = " + String.format("%3.7f",wLoc.getLatitude()) + ", " + String.format("%3.7f",wLoc.getLongitude()) + " p2 = " + String.format("%3.7f",eLoc.getLatitude()) + ", " + String.format("%3.7f",eLoc.getLongitude()) );
+                    Log.d(LOG_TAG, "onDataSetChanged, p1 = " + String.format("%3.7f", wLoc.getLatitude()) + ", " + String.format("%3.7f", wLoc.getLongitude()) + " p2 = " + String.format("%3.7f", eLoc.getLatitude()) + ", " + String.format("%3.7f", eLoc.getLongitude()));
 
 
                     Cursor potentialLocations = getContentResolver().query(imageUri, IMAGESEARCH_COLUMNS, selection, null, orderby);
 
                     double lat;
                     double lon;
-                    float [] distance = new float [3];
+                    float[] distance = new float[3];
                     LinkedList<String> nearLocationList = new LinkedList<>();
 
-                    while(potentialLocations.moveToNext()) {
+                    while (potentialLocations.moveToNext()) {
 
                         lat = potentialLocations.getDouble(potentialLocations.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LAT));
                         lon = potentialLocations.getDouble(potentialLocations.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LON));
@@ -143,10 +140,8 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                     potentialLocations.close();
                     String chosenLocationStr = nearLocationList.poll();
 
-                    if (chosenLocationStr != null)
-                    {
-                        for(String location : nearLocationList)
-                        {
+                    if (chosenLocationStr != null) {
+                        for (String location : nearLocationList) {
                             chosenLocationStr += "," + location;
                         }
 
@@ -155,13 +150,11 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                         Log.d(LOG_TAG, "onDataSetChanged, chosenSelection: " + chosenSelection);
 
 
-
-                       data = getContentResolver().query(ContentProviderDbSchema.ImageTextures.CONTENT_URI, IMAGESEARCH_COLUMNS, chosenSelection, null, null);
+                        data = getContentResolver().query(ContentProviderDbSchema.ImageTextures.CONTENT_URI, IMAGESEARCH_COLUMNS, chosenSelection, null, null);
 
                         Log.d(LOG_TAG, "Count: " + data.getCount());
 
-                    }
-                    else{
+                    } else {
                         data = null;
                     }
 
@@ -174,8 +167,7 @@ public class StraggleRemoteViewService extends RemoteViewsService {
             public void onDestroy() {
                 Log.d(LOG_TAG, "onDestroy...");
 
-                if (data != null)
-                {
+                if (data != null) {
                     data.close();
                     data = null;
                 }
@@ -193,7 +185,6 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                         data == null || !data.moveToPosition(position)) {
                     return null;
                 }
-
 
 
                 RemoteViews views = new RemoteViews(getPackageName(), R.layout.widget_list_item);
@@ -214,7 +205,6 @@ public class StraggleRemoteViewService extends RemoteViewsService {
                 imageLocation.setLongitude(lon);
 
                 final Intent fillInIntent = new Intent();
-
 
 
                 fillInIntent.putExtra(MainActivity.EXTRA_IMAGE_LOCATION, imageLocation);
@@ -238,8 +228,7 @@ public class StraggleRemoteViewService extends RemoteViewsService {
 
             @Override
             public long getItemId(int i) {
-                if (data.moveToPosition(i))
-                {
+                if (data.moveToPosition(i)) {
 
                     return Long.valueOf(data.getInt(data.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID)));
                 }

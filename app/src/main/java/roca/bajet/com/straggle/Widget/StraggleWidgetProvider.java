@@ -41,7 +41,7 @@ public class StraggleWidgetProvider extends AppWidgetProvider {
                 new Intent(context, StraggleRemoteViewService.class));
 
 
-        Intent clickIntentTemplate = new Intent (context, MainActivity.class);
+        Intent clickIntentTemplate = new Intent(context, MainActivity.class);
         PendingIntent clickPendingIntentTemplate = TaskStackBuilder.create(context)
                 .addNextIntentWithParentStack(clickIntentTemplate)
                 .getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -53,7 +53,6 @@ public class StraggleWidgetProvider extends AppWidgetProvider {
         appWidgetManager.updateAppWidget(appWidgetId, views);
 
         WidgetLocationService.createPeriodicLocationTask(context);
-
 
 
     }
@@ -95,16 +94,14 @@ public class StraggleWidgetProvider extends AppWidgetProvider {
     }
 
     @Override
-    public void onDeleted(Context context, int[] appWidgetIds)
-    {
+    public void onDeleted(Context context, int[] appWidgetIds) {
         Log.d(LOG_TAG, "onDeleted...");
-
 
 
         WidgetLocationService.stopPeriodicLocationTask(context);
 
 
-        super.onDeleted(context,appWidgetIds);
+        super.onDeleted(context, appWidgetIds);
     }
 
 

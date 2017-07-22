@@ -195,7 +195,6 @@ public class MainActivity extends AppCompatActivity implements
     private LatLng mRestoreAddMarkerLatLng;
 
 
-
     private Intent mIntent;
     private String mAction;
     private String mType;
@@ -272,7 +271,7 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.main_activity);
 
         mHandler = new Handler();
-        mUploadServiceIntent = new Intent (this, UploadIntentService.class);
+        mUploadServiceIntent = new Intent(this, UploadIntentService.class);
 
         mCircularRevealView = findViewById(R.id.circular_reveal_view);
 
@@ -289,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements
         mSlidingUpLayout.addPanelSlideListener(new SlidingUpPanelLayout.PanelSlideListener() {
             @Override
             public void onPanelSlide(View panel, float slideOffset) {
-                
+
             }
 
             @Override
@@ -297,8 +296,6 @@ public class MainActivity extends AppCompatActivity implements
                 mPanelState = newState;
             }
         });
-
-
 
 
         mToolbar = (Toolbar) findViewById(R.id.main_toolbar);
@@ -319,9 +316,7 @@ public class MainActivity extends AppCompatActivity implements
         mMapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map_fragment);
 
 
-
         mMapFragment.getMapAsync(this);
-
 
 
         mSensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
@@ -361,10 +356,9 @@ public class MainActivity extends AppCompatActivity implements
 
             mRestoreCurrentFilename = savedInstanceState.getString(KEY_IMAGE_FILENAME);
 
-            mRestorePanelState=(SlidingUpPanelLayout.PanelState)savedInstanceState.getSerializable(KEY_PANEL_STATE);
+            mRestorePanelState = (SlidingUpPanelLayout.PanelState) savedInstanceState.getSerializable(KEY_PANEL_STATE);
             Log.d(LOG_TAG, "onCreate, savedInstanceState != null, panelState = " + mRestorePanelState);
-            if (mRestorePanelState != null && mRestorePanelState != SlidingUpPanelLayout.PanelState.DRAGGING)
-            {
+            if (mRestorePanelState != null && mRestorePanelState != SlidingUpPanelLayout.PanelState.DRAGGING) {
                 mSlidingUpLayout.setPanelState(mRestorePanelState);
             }
 
@@ -376,9 +370,6 @@ public class MainActivity extends AppCompatActivity implements
         mIntent = getIntent();
         mAction = mIntent.getAction();
         mType = mIntent.getType();
-
-
-
 
 
         //WidgetLocationService.createPeriodicLocationTask(getApplicationContext());
@@ -401,15 +392,14 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onNewIntent (Intent intent)
-    {
+    public void onNewIntent(Intent intent) {
         Log.d(LOG_TAG, "onNewIntent");
 
         mIntent = intent;
         mAction = intent.getAction();
         mType = intent.getType();
 
-        if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
+        if ((Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction))
                 && mAddMenuActionMode == null) {
 
             Log.d(LOG_TAG, "onNewIntent. Add menu action mode");
@@ -429,26 +419,19 @@ public class MainActivity extends AppCompatActivity implements
                     .flat(true));
 
 
-
-
-
-            if (Intent.ACTION_SEND.equals(mAction))
-            {
+            if (Intent.ACTION_SEND.equals(mAction)) {
                 mAddMenuActionMode.setTitle(R.string.menu_add_photo_title);
-            }
-            else{
+            } else {
                 mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
             }
 
-        }
-
-        else if (intent.hasExtra(EXTRA_IMAGE_FILENAME) && intent.hasExtra(EXTRA_IMAGE_LOCATION)){
+        } else if (intent.hasExtra(EXTRA_IMAGE_FILENAME) && intent.hasExtra(EXTRA_IMAGE_LOCATION)) {
 
 
             mWidgetCameraLocation = intent.getExtras().getParcelable(EXTRA_IMAGE_LOCATION);
             mWidgetItemFilename = intent.getExtras().getString(EXTRA_IMAGE_FILENAME);
 
-            Log.d(LOG_TAG,"onNewIntent, imageLocation " + String.format("%3.7f",mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f",mWidgetCameraLocation.getLongitude()));
+            Log.d(LOG_TAG, "onNewIntent, imageLocation " + String.format("%3.7f", mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f", mWidgetCameraLocation.getLongitude()));
             Log.d(LOG_TAG, "onNewIntent, filename: " + mWidgetItemFilename);
 
             CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mWidgetCameraLocation.getLatitude(), mWidgetCameraLocation.getLongitude()), 16f);
@@ -491,7 +474,6 @@ public class MainActivity extends AppCompatActivity implements
                 return true;
 
 
-
             default:
                 // If we got here, the user's mAction was not recognized.
                 // Invoke the superclass to handle it.
@@ -501,10 +483,8 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public boolean dispatchTouchEvent (MotionEvent ev)
-    {
-        if (mGestureDetector != null)
-        {
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        if (mGestureDetector != null) {
             mGestureDetector.onTouchEvent(ev);
         }
 
@@ -512,8 +492,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDestroy()
-    {
+    public void onDestroy() {
         super.onDestroy();
         Log.d(LOG_TAG, "onDestroy");
 
@@ -605,7 +584,6 @@ public class MainActivity extends AppCompatActivity implements
         mGoogleMap.setOnMapClickListener(this);
 
 
-
         mClusterManager = new OverviewClusterManager<>(this, mGoogleMap);
         mClusterManager.setOnClusterManagerCallback(this);
         mClusterManager.setRenderer(new ImageBubbleIconRenderer(getApplicationContext(), mGoogleMap, mClusterManager));
@@ -645,8 +623,7 @@ public class MainActivity extends AppCompatActivity implements
         });
 
 
-        if (isConfigurationChange)
-        {
+        if (isConfigurationChange) {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 if (mCurrentLocation != null) {
 
@@ -658,14 +635,13 @@ public class MainActivity extends AppCompatActivity implements
             }
 
 
-        }
-        else if (!isConfigurationChange && mIntent.hasExtra(EXTRA_IMAGE_FILENAME) && mIntent.hasExtra(EXTRA_IMAGE_LOCATION)){
+        } else if (!isConfigurationChange && mIntent.hasExtra(EXTRA_IMAGE_FILENAME) && mIntent.hasExtra(EXTRA_IMAGE_LOCATION)) {
 
 
             mWidgetCameraLocation = mIntent.getExtras().getParcelable(EXTRA_IMAGE_LOCATION);
             mWidgetItemFilename = mIntent.getExtras().getString(EXTRA_IMAGE_FILENAME);
 
-            Log.d(LOG_TAG,"onMapReady, imageLocation " + String.format("%3.7f",mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f",mWidgetCameraLocation.getLongitude()));
+            Log.d(LOG_TAG, "onMapReady, imageLocation " + String.format("%3.7f", mWidgetCameraLocation.getLatitude()) + ", " + String.format("%3.7f", mWidgetCameraLocation.getLongitude()));
             Log.d(LOG_TAG, "onMapReady, filename: " + mWidgetItemFilename);
 
             CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mWidgetCameraLocation.getLatitude(), mWidgetCameraLocation.getLongitude()), 16f);
@@ -674,17 +650,12 @@ public class MainActivity extends AppCompatActivity implements
             mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.ANCHORED);
 
 
-
-        }
-
-        else if (!isConfigurationChange && mIntent.getExtras() == null)
-        {
+        } else if (!isConfigurationChange && mIntent.getExtras() == null) {
             if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
 
 
-                if (mCurrentLocation != null)
-                {
+                if (mCurrentLocation != null) {
                     CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude()), 16f);
                     mGoogleMap.moveCamera(cameraUpdate);
                 }
@@ -693,18 +664,15 @@ public class MainActivity extends AppCompatActivity implements
         }
 
 
-        mGestureDetector = new GestureDetector(getApplicationContext(), new GestureDetector.SimpleOnGestureListener()
-        {
+        mGestureDetector = new GestureDetector(getApplicationContext(), new GestureDetector.SimpleOnGestureListener() {
             @Override
-            public boolean onSingleTapUp (MotionEvent ev)
-            {
+            public boolean onSingleTapUp(MotionEvent ev) {
                 mTapMotionEvent = ev;
                 return super.onSingleTapUp(ev);
             }
 
             @Override
-            public void onLongPress(MotionEvent ev)
-            {
+            public void onLongPress(MotionEvent ev) {
 
                 super.onLongPress(ev);
             }
@@ -712,7 +680,7 @@ public class MainActivity extends AppCompatActivity implements
 
         });
 
-        if ( ( Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction) )
+        if ((Intent.ACTION_SEND.equals(mAction) || Intent.ACTION_SEND_MULTIPLE.equals(mAction))
                 && mAddMenuActionMode == null && !isConfigurationChange) {
 
             Log.d(LOG_TAG, "onMapReady. add menu action mode");
@@ -732,18 +700,13 @@ public class MainActivity extends AppCompatActivity implements
                     .flat(true));
 
 
-            if (Intent.ACTION_SEND.equals(mAction))
-            {
+            if (Intent.ACTION_SEND.equals(mAction)) {
                 mAddMenuActionMode.setTitle(R.string.menu_add_photo_title);
-            }
-            else{
+            } else {
                 mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
             }
 
-        }
-
-        else if ( mRestoreAddMarkerLatLng != null && isConfigurationChange )
-        {
+        } else if (mRestoreAddMarkerLatLng != null && isConfigurationChange) {
             Log.d(LOG_TAG, "onMapReady. Add menu action mode and Configuration Change");
 
             mRecyclerViewAdapter.closeContextActionMenu();
@@ -760,20 +723,16 @@ public class MainActivity extends AppCompatActivity implements
                     .flat(true));
 
 
-            if (Intent.ACTION_SEND.equals(mAction))
-            {
+            if (Intent.ACTION_SEND.equals(mAction)) {
                 mAddMenuActionMode.setTitle(R.string.menu_add_photo_title);
-            }
-            else{
+            } else {
                 mAddMenuActionMode.setTitle(R.string.menu_add_photos_title);
             }
 
         }
 
 
-
     }
-
 
 
     private void updateLocationUI() {
@@ -805,8 +764,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    public void resolveAllNeededPermissions()
-    {
+    public void resolveAllNeededPermissions() {
         ArrayList<String> permissionList = new ArrayList<>();
 
         Log.d(LOG_TAG, "resolveNeededPermissions");
@@ -814,8 +772,7 @@ public class MainActivity extends AppCompatActivity implements
                 == PackageManager.PERMISSION_DENIED) {
 
             permissionList.add(android.Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-        else{
+        } else {
             mLocationPermissionGranted = true;
             Log.d(LOG_TAG, "resolveNeededPermissions, location permission granted!");
         }
@@ -824,22 +781,19 @@ public class MainActivity extends AppCompatActivity implements
                 == PackageManager.PERMISSION_DENIED) {
 
             permissionList.add(Manifest.permission.READ_EXTERNAL_STORAGE);
-        }
-        else{
+        } else {
             mIsStoragePermissionGranted = true;
             Log.d(LOG_TAG, "resolveNeededPermissions, storage permission granted!");
         }
 
-        if ( ! mIsStoragePermissionGranted || ! mLocationPermissionGranted)
-        {
+        if (!mIsStoragePermissionGranted || !mLocationPermissionGranted) {
             Log.d(LOG_TAG, "resolveNeededPermissions, permission(s) required");
 
-            if (!mDoneRequestingAllPermissions && !permissionList.isEmpty())
-            {
+            if (!mDoneRequestingAllPermissions && !permissionList.isEmpty()) {
 
 
                 ActivityCompat.requestPermissions(this,
-                        permissionList.toArray(new String [permissionList.size()]),
+                        permissionList.toArray(new String[permissionList.size()]),
                         NEEDED_PERMISSION_REQUEST_CODE);
 
                 mDoneRequestingAllPermissions = true;
@@ -848,31 +802,25 @@ public class MainActivity extends AppCompatActivity implements
         }
 
 
-
-
     }
 
-    public boolean resolveStoragePermission(){
+    public boolean resolveStoragePermission() {
 
         Log.d(LOG_TAG, "resolveStoragePermission");
 
         if (ContextCompat.checkSelfPermission(this,
-                Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
-        {
+                Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             Log.d(LOG_TAG, "resolveStoragePermission, storage permission granted!");
             mIsStoragePermissionGranted = true;
             return true;
-        }
-        else{
+        } else {
 
             Log.d(LOG_TAG, "resolveStoragePermission, storage permission NOT granted!");
 
 
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        READ_STORAGE_PERMISSION_REQUEST_CODE);
-
-
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    READ_STORAGE_PERMISSION_REQUEST_CODE);
 
 
             return false;
@@ -911,16 +859,13 @@ public class MainActivity extends AppCompatActivity implements
                             out.write(Arrays.copyOfRange(imageData, 0, Math.max(0, bytesRead)));
                         }
 
-                        if (in != null)
-                        {
+                        if (in != null) {
                             in.close();
                         }
 
-                        if (out != null)
-                        {
+                        if (out != null) {
                             out.close();
                         }
-
 
 
                         Random randomAngle = new Random();
@@ -938,7 +883,7 @@ public class MainActivity extends AppCompatActivity implements
                         cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, randomAngle.nextInt(360));
                         cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
                         Uri imageTexturesUri = ContentProviderDbSchema.ImageTextures.CONTENT_URI;
-                        getContentResolver().insert(imageTexturesUri,cv);
+                        getContentResolver().insert(imageTexturesUri, cv);
 
                         mHandler.post(new Runnable() {
                             @Override
@@ -962,15 +907,13 @@ public class MainActivity extends AppCompatActivity implements
 
                     } catch (Exception ex) {
                         Log.e("handleSendImage", ex.toString());
-                        if (newPictureFile != null & newPictureFile.exists())
-                        {
+                        if (newPictureFile != null & newPictureFile.exists()) {
                             newPictureFile.delete();
                         }
                     }
 
                 }
             }).start();
-
 
 
             Log.d(LOG_TAG, "handleSendImage, uri: " + imageUri);
@@ -985,98 +928,94 @@ public class MainActivity extends AppCompatActivity implements
             // Update UI to reflect multiple images being shared
 
 
-                new Thread(new Runnable() {
+            new Thread(new Runnable() {
 
-                    @Override
-                    public void run() {
-                        //File file = new File(Uri.parse(imageUri));
+                @Override
+                public void run() {
+                    //File file = new File(Uri.parse(imageUri));
 
-                        int angleInc = 360/imageUris.size();
-                        int currentAngle = 0;
+                    int angleInc = 360 / imageUris.size();
+                    int currentAngle = 0;
 
-                        for (Uri imageUri : imageUris)
-                        {
+                    for (Uri imageUri : imageUris) {
 
-                            File newPictureFile = TextureHelper.getOutputMediaFile(TextureHelper.MEDIA_TYPE_IMAGE);
+                        File newPictureFile = TextureHelper.getOutputMediaFile(TextureHelper.MEDIA_TYPE_IMAGE);
 
-                            final int chunkSize = 1024;  // We'll read in one kB at a time
-                            byte[] imageData = new byte[chunkSize];
+                        final int chunkSize = 1024;  // We'll read in one kB at a time
+                        byte[] imageData = new byte[chunkSize];
 
-                            InputStream in = null;
-                            OutputStream out = null;
+                        InputStream in = null;
+                        OutputStream out = null;
 
-                            try {
-                                in = getContentResolver().openInputStream(imageUri);
-                                out = new FileOutputStream(newPictureFile);  // I'm assuming you already have the File object for where you're writing to
+                        try {
+                            in = getContentResolver().openInputStream(imageUri);
+                            out = new FileOutputStream(newPictureFile);  // I'm assuming you already have the File object for where you're writing to
 
-                                int bytesRead;
-                                while ((bytesRead = in.read(imageData)) > 0) {
-                                    out.write(Arrays.copyOfRange(imageData, 0, Math.max(0, bytesRead)));
-                                }
-
-                                if (in != null)
-                                {
-                                    in.close();
-                                }
-
-                                if (out != null)
-                                {
-                                    out.close();
-                                }
-
-
-                                BitmapFactory.Options options = new BitmapFactory.Options();
-                                options.inJustDecodeBounds = true;
-                                BitmapFactory.decodeFile(newPictureFile.getAbsolutePath(), options);
-                                int aspect_ratio = TextureHelper.getBestAspectRatio(options);
-
-
-                                ContentValues cv = new ContentValues();
-                                cv.put(ContentProviderDbSchema.ImageTextures.COL_FILENAME, newPictureFile.getName());
-                                cv.put(ContentProviderDbSchema.ImageTextures.COL_LAT, lat);
-                                cv.put(ContentProviderDbSchema.ImageTextures.COL_LON, lon);
-                                cv.put(ContentProviderDbSchema.ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
-                                cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, currentAngle);
-                                cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
-                                Uri imageTexturesUri = ContentProviderDbSchema.ImageTextures.CONTENT_URI;
-                                getContentResolver().insert(imageTexturesUri,cv);
-
-                                currentAngle += angleInc;
-
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                                    Intent mediaScanIntent = new Intent(
-                                            Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-                                    Uri contentUri = Uri.fromFile(newPictureFile);
-                                    mediaScanIntent.setData(contentUri);
-                                    sendBroadcast(mediaScanIntent);
-                                } else {
-                                    sendBroadcast(new Intent(
-                                            Intent.ACTION_MEDIA_MOUNTED,
-                                            Uri.parse("file://"
-                                                    + Environment.getExternalStorageDirectory())));
-                                }
-
-                                mHandler.post(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
-                                    }
-                                });
-
-
-                            } catch (Exception ex) {
-                                Log.e("handleSendImage", ex.toString());
-                                if (newPictureFile != null & newPictureFile.exists())
-                                {
-                                    newPictureFile.delete();
-                                }
+                            int bytesRead;
+                            while ((bytesRead = in.read(imageData)) > 0) {
+                                out.write(Arrays.copyOfRange(imageData, 0, Math.max(0, bytesRead)));
                             }
 
-                            Log.d(LOG_TAG, "handleSendMultipleImages, uri: " + imageUri);
+                            if (in != null) {
+                                in.close();
+                            }
+
+                            if (out != null) {
+                                out.close();
+                            }
+
+
+                            BitmapFactory.Options options = new BitmapFactory.Options();
+                            options.inJustDecodeBounds = true;
+                            BitmapFactory.decodeFile(newPictureFile.getAbsolutePath(), options);
+                            int aspect_ratio = TextureHelper.getBestAspectRatio(options);
+
+
+                            ContentValues cv = new ContentValues();
+                            cv.put(ContentProviderDbSchema.ImageTextures.COL_FILENAME, newPictureFile.getName());
+                            cv.put(ContentProviderDbSchema.ImageTextures.COL_LAT, lat);
+                            cv.put(ContentProviderDbSchema.ImageTextures.COL_LON, lon);
+                            cv.put(ContentProviderDbSchema.ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
+                            cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, currentAngle);
+                            cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, aspect_ratio);
+                            Uri imageTexturesUri = ContentProviderDbSchema.ImageTextures.CONTENT_URI;
+                            getContentResolver().insert(imageTexturesUri, cv);
+
+                            currentAngle += angleInc;
+
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                                Intent mediaScanIntent = new Intent(
+                                        Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                                Uri contentUri = Uri.fromFile(newPictureFile);
+                                mediaScanIntent.setData(contentUri);
+                                sendBroadcast(mediaScanIntent);
+                            } else {
+                                sendBroadcast(new Intent(
+                                        Intent.ACTION_MEDIA_MOUNTED,
+                                        Uri.parse("file://"
+                                                + Environment.getExternalStorageDirectory())));
+                            }
+
+                            mHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
+                                }
+                            });
+
+
+                        } catch (Exception ex) {
+                            Log.e("handleSendImage", ex.toString());
+                            if (newPictureFile != null & newPictureFile.exists()) {
+                                newPictureFile.delete();
+                            }
                         }
 
+                        Log.d(LOG_TAG, "handleSendMultipleImages, uri: " + imageUri);
                     }
-                }).start();
+
+                }
+            }).start();
 
 
         }
@@ -1101,7 +1040,7 @@ public class MainActivity extends AppCompatActivity implements
                     Log.d(LOG_TAG, "onRequestPermissionsResult, location permission granted!");
                     updateLocationUI();
 
-                } else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED){
+                } else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED) {
                     Log.d(LOG_TAG, "onRequestPermissionsResult, location permission NOT granted!");
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
@@ -1115,13 +1054,10 @@ public class MainActivity extends AppCompatActivity implements
 
             case READ_STORAGE_PERMISSION_REQUEST_CODE:
 
-                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
-                {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted granted!");
                     mIsStoragePermissionGranted = true;
-                }
-                else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED)
-                {
+                } else if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_DENIED) {
                     Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted NOT granted!");
                     mIsStoragePermissionGranted = false;
                 }
@@ -1130,13 +1066,11 @@ public class MainActivity extends AppCompatActivity implements
 
             case NEEDED_PERMISSION_REQUEST_CODE:
 
-                if (grantResults.length < 1)
-                {
+                if (grantResults.length < 1) {
                     break;
                 }
 
-                for (int i = 0; i < permissions.length; i++)
-                {
+                for (int i = 0; i < permissions.length; i++) {
                     if (permissions[i] == android.Manifest.permission.ACCESS_FINE_LOCATION
                             && grantResults[i] == PackageManager.PERMISSION_GRANTED) {
                         // permission was granted, yay! Do the
@@ -1147,10 +1081,8 @@ public class MainActivity extends AppCompatActivity implements
                         Log.d(LOG_TAG, "onRequestPermissionsResult, location permission granted!");
                         updateLocationUI();
 
-                    }
-
-                    else if (permissions[i] == android.Manifest.permission.ACCESS_FINE_LOCATION
-                            && grantResults[i] == PackageManager.PERMISSION_DENIED){
+                    } else if (permissions[i] == android.Manifest.permission.ACCESS_FINE_LOCATION
+                            && grantResults[i] == PackageManager.PERMISSION_DENIED) {
                         mLocationPermissionGranted = false;
                         mCurrentLocation = null;
                         mCurrentLocationMarker.setVisible(false);
@@ -1158,14 +1090,12 @@ public class MainActivity extends AppCompatActivity implements
                     }
 
                     if (permissions[i] == Manifest.permission.READ_EXTERNAL_STORAGE
-                            && grantResults[i] == PackageManager.PERMISSION_GRANTED){
+                            && grantResults[i] == PackageManager.PERMISSION_GRANTED) {
 
                         Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted granted!");
                         mIsStoragePermissionGranted = true;
-                    }
-
-                    else if (permissions[i] == Manifest.permission.READ_EXTERNAL_STORAGE
-                            && grantResults[i] == PackageManager.PERMISSION_DENIED){
+                    } else if (permissions[i] == Manifest.permission.READ_EXTERNAL_STORAGE
+                            && grantResults[i] == PackageManager.PERMISSION_DENIED) {
                         Log.d(LOG_TAG, "onRequestPermissionsResult, mIsStoragePermissionGranted denied!");
                         mIsStoragePermissionGranted = false;
                     }
@@ -1174,7 +1104,6 @@ public class MainActivity extends AppCompatActivity implements
 
 
                 break;
-
 
 
         }
@@ -1195,8 +1124,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onCameraMoveStarted(int reason) {
         Log.d(LOG_TAG, "onCameraMoveStarted...");
 
-        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE)
-        {
+        if (reason == GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE) {
             mRecyclerViewAdapter.closeContextActionMenu();
         }
 
@@ -1207,8 +1135,7 @@ public class MainActivity extends AppCompatActivity implements
 
         Log.d(LOG_TAG, "onMapClick...");
 
-        if(mAddMenuActionMode != null)
-        {
+        if (mAddMenuActionMode != null) {
             mAddNewPhotoMarker.setPosition(latLng);
         }
     }
@@ -1229,9 +1156,6 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(LOG_TAG, "onConnected...");
 
 
-
-
-
         createLocationRequest();
 
         if (mRequestingLocationUpdates) {
@@ -1250,8 +1174,7 @@ public class MainActivity extends AppCompatActivity implements
             outState.putParcelable(KEY_CAMERA_POSITION, mGoogleMap.getCameraPosition());
             outState.putParcelable(KEY_LOCATION, mCurrentLocation);
 
-            if (mRecyclerViewAdapter.getCursor() != null && mRecyclerViewAdapter.getCursor().getCount() > 0)
-            {
+            if (mRecyclerViewAdapter.getCursor() != null && mRecyclerViewAdapter.getCursor().getCount() > 0) {
                 int position = ((LinearLayoutManager) mRecyclerView.getLayoutManager()).findLastCompletelyVisibleItemPosition();
                 mRecyclerViewAdapter.getCursor().moveToPosition(position);
                 String filename = mRecyclerViewAdapter.getCursor().getString(mRecyclerViewAdapter.getCursor().getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
@@ -1260,17 +1183,13 @@ public class MainActivity extends AppCompatActivity implements
             }
 
 
-
-            if (mAddNewPhotoMarker != null)
-            {
+            if (mAddNewPhotoMarker != null) {
                 outState.putParcelable(KEY_ADD_MARKER, mAddNewPhotoMarker.getPosition());
             }
 
-            if (mSlidingUpLayout.getPanelState() == null)
-            {
+            if (mSlidingUpLayout.getPanelState() == null) {
                 outState.putSerializable(KEY_PANEL_STATE, mPanelState);
-            }
-            else{
+            } else {
                 outState.putSerializable(KEY_PANEL_STATE, mSlidingUpLayout.getPanelState());
             }
 
@@ -1303,13 +1222,11 @@ public class MainActivity extends AppCompatActivity implements
             CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 16f);
             mGoogleMap.moveCamera(cameraUpdate);
 
-            if (mAddMenuActionMode != null && mAddNewPhotoMarker != null)
-            {
+            if (mAddMenuActionMode != null && mAddNewPhotoMarker != null) {
                 mAddNewPhotoMarker.setPosition(latLng);
             }
 
         }
-
 
 
         mCurrentLocation = location;
@@ -1378,13 +1295,11 @@ public class MainActivity extends AppCompatActivity implements
 
                                 Log.d(LOG_TAG, "onResult Location, RESOLUTION_REQUIRED!");
 
-                                if ( !locSettingsStates.isGpsUsable())
-                                {
+                                if (!locSettingsStates.isGpsUsable()) {
 
                                     mCurrentLocationMarker.setVisible(false);
 
-                                    if (!mLocationSettingsEntered && mLocationCheckDialog.getDialog() == null)
-                                    {
+                                    if (!mLocationSettingsEntered && mLocationCheckDialog.getDialog() == null) {
                                         mLocationCheckDialog.show(getSupportFragmentManager(), "LocationCheckDialog");
                                     }
 
@@ -1429,7 +1344,6 @@ public class MainActivity extends AppCompatActivity implements
         };
 
 
-
         if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
             Log.d(LOG_TAG, "startLocationUpdates, requested Location Updates!");
@@ -1442,18 +1356,15 @@ public class MainActivity extends AppCompatActivity implements
 
         //resolveStoragePermission();
 
-        if (!mIsStoragePermissionGranted)
-        {
+        if (!mIsStoragePermissionGranted) {
             Log.d(LOG_TAG, "startLocationUpdates, Storage permission NOT granted!");
             return;
         }
 
-        if (isConfigurationChange)
-        {
-            getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER,null,this);
-        }
-        else{
-            getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER,null,this);
+        if (isConfigurationChange) {
+            getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER, null, this);
+        } else {
+            getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, this);
         }
 
     }
@@ -1483,10 +1394,7 @@ public class MainActivity extends AppCompatActivity implements
                 // The user canceled the operation.
                 Log.i(LOG_TAG, "onActivityResult, result cancelled");
             }
-        }
-
-        else if (requestCode == CAMERA_ACTIVITY_REQUEST_CODE)
-        {
+        } else if (requestCode == CAMERA_ACTIVITY_REQUEST_CODE) {
             Log.d(LOG_TAG, "onActivityResult, CAMERA_ACTIVITY_REQUEST_CODE");
             //getSupportLoaderManager().initLoader(IMAGESEARCH_LOADER,null,this);
         }
@@ -1499,8 +1407,7 @@ public class MainActivity extends AppCompatActivity implements
         LocationServices.FusedLocationApi.removeLocationUpdates(
                 mGoogleApiClient, this);
 
-        if (mLocationCallback != null)
-        {
+        if (mLocationCallback != null) {
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     mGoogleApiClient, mLocationCallback);
         }
@@ -1532,23 +1439,21 @@ public class MainActivity extends AppCompatActivity implements
             //mSlidingUpPanel.setText("Azimuth: " + mAzimuth);
 
 
+            float[] baseAzimuthVector = new float[]{0, 0, 1, -1}; //w,x,y,z
+            float[] northVector = new float[]{0, 0, 1, 0};
+            float[] h = new float[]{sensorEvent.values[3], sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]};
+            float[] hprime = new float[]{h[0], -h[1], -h[2], -h[3]};
 
-            float [] baseAzimuthVector = new float [] {0,0,1,-1}; //w,x,y,z
-            float [] northVector = new float [] {0,0,1,0};
-            float [] h = new float [] {sensorEvent.values[3],sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]};
-            float [] hprime = new float [] {h[0], -h[1], -h[2], -h[3]};
-
-            float [] rotationAzimuthVector = quatmultiply(quatmultiply(h,baseAzimuthVector),hprime);
-            float [] normRotationVector = normalizeVector(rotationAzimuthVector);
+            float[] rotationAzimuthVector = quatmultiply(quatmultiply(h, baseAzimuthVector), hprime);
+            float[] normRotationVector = normalizeVector(rotationAzimuthVector);
             normRotationVector[3] = 0;
 
             float angle = getAngleBetweenVectors(northVector, normRotationVector);
             angle *= Math.signum(rotationAzimuthVector[1]);
-            mAzimuth = (float) ((Math.toDegrees( angle ) + 360 ) % 360);
+            mAzimuth = (float) ((Math.toDegrees(angle) + 360) % 360);
 
 
-            if (mCurrentLocation != null && mGoogleMap != null && mIsRotationVectorEnabled)
-            {
+            if (mCurrentLocation != null && mGoogleMap != null && mIsRotationVectorEnabled) {
                 mCurrentLocationMarker.setRotation(mAzimuth);
             }
 
@@ -1566,8 +1471,7 @@ public class MainActivity extends AppCompatActivity implements
 
         Log.d(LOG_TAG, "onCreateLoader");
 
-        if (id == IMAGESEARCH_LOADER && mIsStoragePermissionGranted)
-        {
+        if (id == IMAGESEARCH_LOADER && mIsStoragePermissionGranted) {
 
 
             double currentLat = mGoogleMap.getCameraPosition().target.latitude;
@@ -1582,7 +1486,7 @@ public class MainActivity extends AppCompatActivity implements
             (<lng> - LNG_COLUMN) * (<lng> - LNG_COLUMN) * <fudge>)
              */
 
-            double fudge = Math.pow(Math.cos(Math.toRadians(currentLat)),2);
+            double fudge = Math.pow(Math.cos(Math.toRadians(currentLat)), 2);
             Uri imageUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(ContentProviderOpenHelper.DEFAULT_USER_ID);
             String orderby = "( (" + currentLat + " - " + ContentProviderDbSchema.ImageTextures.COL_LAT + ") * (" + currentLat + " - " + ContentProviderDbSchema.ImageTextures.COL_LAT + ") + (" +
                     currentLon + " - " + ContentProviderDbSchema.ImageTextures.COL_LON + ") * (" + currentLon + " - " + ContentProviderDbSchema.ImageTextures.COL_LON + ") * " + fudge + " ) " +
@@ -1593,17 +1497,17 @@ public class MainActivity extends AppCompatActivity implements
             Location wLoc = CameraRenderer.calculateDestinationLocation(currentLocation, 270, mCameraRadius);
             Location eLoc = CameraRenderer.calculateDestinationLocation(currentLocation, 90, mCameraRadius);
 
-            double decDegrees = (mCameraRadius * 0.01f)/1113.2f;
+            double decDegrees = (mCameraRadius * 0.01f) / 1113.2f;
 
             double nLat = (currentLat + decDegrees);
             double sLat = (currentLat - decDegrees);
 
 
-            String selection = ContentProviderDbSchema.ImageTextures.COL_LON + " > " + wLoc.getLongitude() + " AND " +  ContentProviderDbSchema.ImageTextures.COL_LON + " < " + eLoc.getLongitude() +
+            String selection = ContentProviderDbSchema.ImageTextures.COL_LON + " > " + wLoc.getLongitude() + " AND " + ContentProviderDbSchema.ImageTextures.COL_LON + " < " + eLoc.getLongitude() +
                     " AND " + ContentProviderDbSchema.ImageTextures.COL_LAT + " > " + sLat + " AND " + ContentProviderDbSchema.ImageTextures.COL_LAT + " < " + nLat;
 
             Log.d(LOG_TAG, "onCreateLoader, selection = " + selection);
-            Log.d(LOG_TAG, "onCreateLoader, p1 = " + String.format("%3.7f",wLoc.getLatitude()) + ", " + String.format("%3.7f",wLoc.getLongitude()) + " p2 = " + String.format("%3.7f",eLoc.getLatitude()) + ", " + String.format("%3.7f",eLoc.getLongitude()) );
+            Log.d(LOG_TAG, "onCreateLoader, p1 = " + String.format("%3.7f", wLoc.getLatitude()) + ", " + String.format("%3.7f", wLoc.getLongitude()) + " p2 = " + String.format("%3.7f", eLoc.getLatitude()) + ", " + String.format("%3.7f", eLoc.getLongitude()));
 
             cursorLoader = new CursorLoader(this,
                     imageUri,
@@ -1627,15 +1531,13 @@ public class MainActivity extends AppCompatActivity implements
         Long id;
         double lat;
         double lon;
-        float [] distance = new float [3];
+        float[] distance = new float[3];
 
         File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "Straggle");
         mRecyclerViewAdapter.swapCursor(data);
 
-        if (loader.getId() == IMAGESEARCH_LOADER && mIsStoragePermissionGranted)
-        {
-            if ( data.getCount() == 0)
-            {
+        if (loader.getId() == IMAGESEARCH_LOADER && mIsStoragePermissionGranted) {
+            if (data.getCount() == 0) {
                 mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
             }
 
@@ -1645,45 +1547,37 @@ public class MainActivity extends AppCompatActivity implements
 
             toggleUpdate = !toggleUpdate;
 
-            if (mWidgetCameraLocation != null)
-            {
+            if (mWidgetCameraLocation != null) {
                 int position = mRecyclerViewAdapter.getPositionFromFilename(mWidgetItemFilename);
                 Log.d(LOG_TAG, "onLoadFinished: mWidgetCameraLocation exists and item position is " + position);
-                if (position > -1)
-                {
+                if (position > -1) {
                     mRecyclerView.getLayoutManager().scrollToPosition(position);
                 }
-            }
+            } else if (isConfigurationChange) {
 
-            else if (isConfigurationChange)
-            {
-
-                if (mRestoreCurrentFilename != null)
-                {Log.d(LOG_TAG, "onLoadFinished: mRestoreCurrentFilename = " + mRestoreCurrentFilename);
+                if (mRestoreCurrentFilename != null) {
+                    Log.d(LOG_TAG, "onLoadFinished: mRestoreCurrentFilename = " + mRestoreCurrentFilename);
 
                     int position = mRecyclerViewAdapter.getPositionFromFilename(mRestoreCurrentFilename);
-                    if (position > -1)
-                    {
+                    if (position > -1) {
                         mRecyclerView.getLayoutManager().scrollToPosition(position);
                     }
                 }
 
 
                 Log.d(LOG_TAG, "onLoadFinished: mRestorePanelState = " + mRestorePanelState);
-                if (mRestorePanelState != null && mRestorePanelState != SlidingUpPanelLayout.PanelState.DRAGGING)
-                {
+                if (mRestorePanelState != null && mRestorePanelState != SlidingUpPanelLayout.PanelState.DRAGGING) {
                     mSlidingUpLayout.setPanelState(mRestorePanelState);
 
                 }
 
-               // mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
+                // mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.EXPANDED);
 
             }
 
             data.moveToPosition(-1);
 
-            while(data.moveToNext())
-            {
+            while (data.moveToNext()) {
                 //Log.d(LOG_TAG, "")
                 id = data.getLong(data.getColumnIndex(ContentProviderDbSchema.ImageTextures._ID));
                 lat = data.getDouble(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LAT));
@@ -1691,15 +1585,13 @@ public class MainActivity extends AppCompatActivity implements
 
                 Location.distanceBetween(currentLat, currentLon, lat, lon, distance);
 
-                if (distance[0] > mCameraRadius)
-                {
-                    Log.d(LOG_TAG, "onLoadFinished: distance > cameraRadius : " + mCameraRadius) ;
+                if (distance[0] > mCameraRadius) {
+                    Log.d(LOG_TAG, "onLoadFinished: distance > cameraRadius : " + mCameraRadius);
                     break;
                 }
 
 
-
-                Log.d(LOG_TAG, "onLoadFinished: distance = " + distance[0]) ;
+                Log.d(LOG_TAG, "onLoadFinished: distance = " + distance[0]);
 
 
                 filename = data.getString(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
@@ -1715,10 +1607,8 @@ public class MainActivity extends AppCompatActivity implements
                 getContentResolver().update(uri, cv, where, whereArgs);
                 */
 
-                if (!mediaFile.exists())
-                {
-                    if (mITmap.containsKey(filename))
-                    {
+                if (!mediaFile.exists()) {
+                    if (mITmap.containsKey(filename)) {
                         mClusterManager.removeItem(mITmap.get(filename));
                         mITmap.remove(filename);
                     }
@@ -1726,8 +1616,7 @@ public class MainActivity extends AppCompatActivity implements
 
                     String deletehash = data.getString(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH));
 
-                    if (deletehash != null)
-                    {
+                    if (deletehash != null) {
                         Log.d(LOG_TAG, "Deleting non-existent image record from content provider");
 
                         mUploadServiceIntent.putExtra("tag", UploadIntentService.DELETEIMAGEANDRECORD);
@@ -1737,29 +1626,24 @@ public class MainActivity extends AppCompatActivity implements
                     }
 
 
-                }
-
-                else if (!mITmap.containsKey(filename))
-                {
+                } else if (!mITmap.containsKey(filename)) {
                     Bitmap bp = TextureHelper.decodeSampledBitmapFromFile(mediaFile.getAbsolutePath(), 48, 48);
 
                     LatLng latlng = new LatLng(lat, lon);
 
 
-                    ImageBubbleIcon newImageIcon = new ImageBubbleIcon(latlng,TextureHelper.getSquareClip(bp));
+                    ImageBubbleIcon newImageIcon = new ImageBubbleIcon(latlng, TextureHelper.getSquareClip(bp));
 
                     mClusterManager.addItem(newImageIcon);
 
                     newImageIcon.mToggleUpdate = toggleUpdate;
 
                     mITmap.put(filename, newImageIcon);
-                }
-                else {
+                } else {
                     //mITmap.get(filename).setTag(toggleUpdate);
                     mITmap.get(filename).mToggleUpdate = toggleUpdate;
                 }
             }
-
 
 
             ArrayList<String> deleteList = new ArrayList<>();
@@ -1770,8 +1654,7 @@ public class MainActivity extends AppCompatActivity implements
                 //Marker m = mITmap.get(f);
                 ImageBubbleIcon m = mITmap.get(f);
 
-                if (m.mToggleUpdate != toggleUpdate)
-                {
+                if (m.mToggleUpdate != toggleUpdate) {
                     deleteList.add(f);
                     //mITmap.remove(f);
                     mClusterManager.removeItem(m);
@@ -1780,13 +1663,11 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
 
-            for (String f : deleteList)
-            {
+            for (String f : deleteList) {
                 mITmap.remove(f);
             }
 
             mClusterManager.cluster();
-
 
 
         }
@@ -1795,7 +1676,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-        Log.d(LOG_TAG, "onLoaderReset...") ;
+        Log.d(LOG_TAG, "onLoaderReset...");
         mRecyclerViewAdapter.swapCursor(null);
     }
 
@@ -1815,8 +1696,6 @@ public class MainActivity extends AppCompatActivity implements
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-
 
 
         mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.ANCHORED);
@@ -1843,8 +1722,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onCameraIdle(float cameraRadius)
-    {
+    public void onCameraIdle(float cameraRadius) {
 
 
         mCurrentCameraPosition = mGoogleMap.getCameraPosition();
@@ -1852,14 +1730,11 @@ public class MainActivity extends AppCompatActivity implements
         mCameraRadius = cameraRadius;
 
 
-
-        if (mIsStoragePermissionGranted)
-        {
+        if (mIsStoragePermissionGranted) {
             Log.d(LOG_TAG, "onCameraIdle, mCameraRadius : " + mCameraRadius);
             getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
 
         }
-
 
 
         //mClusterManager.cluster();
@@ -1868,20 +1743,18 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onMarkerClickListener(Marker marker) {
 
-        if ( mCurrentLocationMarker != null
+        if (mCurrentLocationMarker != null
                 && marker.getId().equalsIgnoreCase(mCurrentLocationMarker.getId())
                 && mTapMotionEvent != null
                 && mAddMenuActionMode == null
-                && !mRecyclerViewAdapter.isContextActionMenu())
-        {
+                && !mRecyclerViewAdapter.isContextActionMenu()) {
             Log.d(LOG_TAG, "CurrentLocationMarker x = " + mTapMotionEvent.getX() + ", y = " + mTapMotionEvent.getY());
 
 
             float finalRadius = (float) Math.hypot(mTapMotionEvent.getX(), mTapMotionEvent.getY());
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
-            {
-                Animator anim = ViewAnimationUtils.createCircularReveal(mCircularRevealView, (int)mTapMotionEvent.getX(), (int)mTapMotionEvent.getY()-152, 0, finalRadius);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                Animator anim = ViewAnimationUtils.createCircularReveal(mCircularRevealView, (int) mTapMotionEvent.getX(), (int) mTapMotionEvent.getY() - 152, 0, finalRadius);
                 mCircularRevealView.setVisibility(View.VISIBLE);
                 mCircularRevealView.bringToFront();
 
@@ -1915,11 +1788,10 @@ public class MainActivity extends AppCompatActivity implements
                 anim.start();
             }
             //No circular reveal animation for below Lollipop devices
-            else{
+            else {
                 Intent i = new Intent(MainActivity.this, CameraActivity.class);
                 startActivityForResult(i, CAMERA_ACTIVITY_REQUEST_CODE);
             }
-
 
 
         }

@@ -75,12 +75,10 @@ public class ContentProviderStraggle extends ContentProvider {
         String where;
         Cursor cursor;
 
-        switch (sUriMatcher.match(uri))
-        {
+        switch (sUriMatcher.match(uri)) {
             case URI_MATCH_IMAGETEXTURES:
                 builder.setTables(TBL_IMAGETEXTURES);
-                if (TextUtils.isEmpty(sortOrder))
-                {
+                if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = ImageTextures.SORT_ORDER_DEFAULT;
                 }
 
@@ -89,28 +87,25 @@ public class ContentProviderStraggle extends ContentProvider {
             case URI_MATCH_IMAGETEXTURES_ID:
                 builder.setTables(TBL_IMAGETEXTURES);
 
-                if (selection != null)
-                {
+                if (selection != null) {
                     where = ImageTextures.COL_USER_ID + " = ? AND " + selection;
-                }
-                else{
+                } else {
                     where = ImageTextures.COL_USER_ID + " = ?";
                 }
 
 
-                cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
+                cursor = builder.query(db, projection, where, new String[]{uri.getLastPathSegment()}, null, null, sortOrder);
                 break;
 
             case URI_MATCH_IMAGETEXTURES_FILENAME:
                 builder.setTables(TBL_IMAGETEXTURES);
 
                 where = ImageTextures.COL_FILENAME + " = ?";
-                cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
+                cursor = builder.query(db, projection, where, new String[]{uri.getLastPathSegment()}, null, null, sortOrder);
                 break;
             case URI_MATCH_USERS:
                 builder.setTables(TBL_USERS);
-                if (TextUtils.isEmpty(sortOrder))
-                {
+                if (TextUtils.isEmpty(sortOrder)) {
                     sortOrder = Users.SORT_ORDER_DEFAULT;
                 }
 
@@ -120,14 +115,14 @@ public class ContentProviderStraggle extends ContentProvider {
                 builder.setTables(TBL_USERS);
 
                 where = Users._ID + " = ?";
-                cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
+                cursor = builder.query(db, projection, where, new String[]{uri.getLastPathSegment()}, null, null, sortOrder);
 
                 break;
             case URI_MATCH_USERS_USERNAME:
                 builder.setTables(TBL_USERS);
 
                 where = Users.COL_USERNAME + " = ?";
-                cursor = builder.query(db, projection, where, new String[] {uri.getLastPathSegment()}, null, null, sortOrder);
+                cursor = builder.query(db, projection, where, new String[]{uri.getLastPathSegment()}, null, null, sortOrder);
 
                 break;
             case URI_MATCH_CURRENT_LOCATION:
@@ -151,8 +146,7 @@ public class ContentProviderStraggle extends ContentProvider {
     @Override
     public String getType(Uri uri) {
 
-        switch (sUriMatcher.match(uri))
-        {
+        switch (sUriMatcher.match(uri)) {
             case URI_MATCH_IMAGETEXTURES:
                 return ImageTextures.CONTENT_TYPE;
             case URI_MATCH_IMAGETEXTURES_ID:
@@ -179,8 +173,7 @@ public class ContentProviderStraggle extends ContentProvider {
         final SQLiteDatabase db = mHelper.getReadableDatabase();
         long id = 0;
 
-        switch (sUriMatcher.match(uri))
-        {
+        switch (sUriMatcher.match(uri)) {
             case URI_MATCH_IMAGETEXTURES:
                 id = db.insert(TBL_IMAGETEXTURES, null, contentValues);
                 break;
@@ -211,8 +204,7 @@ public class ContentProviderStraggle extends ContentProvider {
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
 
-        if (id > 0 )
-        {
+        if (id > 0) {
             return getUriForId(id, uri);
         }
 
@@ -225,8 +217,7 @@ public class ContentProviderStraggle extends ContentProvider {
         SQLiteDatabase db = mHelper.getWritableDatabase();
         int deleteCount = 0;
 
-        switch (sUriMatcher.match(uri))
-        {
+        switch (sUriMatcher.match(uri)) {
             case URI_MATCH_IMAGETEXTURES:
                 deleteCount = db.delete(TBL_IMAGETEXTURES, selection, selectionArgs);
                 break;
@@ -264,42 +255,38 @@ public class ContentProviderStraggle extends ContentProvider {
                 break;
             case URI_MATCH_USERS_ID: {
                 String where = Users._ID + " = ?";
-                String [] concateSelectionArgs;
-                if ( !TextUtils.isEmpty(selection)){
+                String[] concateSelectionArgs;
+                if (!TextUtils.isEmpty(selection)) {
                     where += " AND " + selection;
-                    concateSelectionArgs = new String [selectionArgs.length+1];
+                    concateSelectionArgs = new String[selectionArgs.length + 1];
                     concateSelectionArgs[0] = uri.getLastPathSegment();
-                    for (int i = 0; i < concateSelectionArgs.length; i++)
-                    {
-                        concateSelectionArgs[i+1] = selectionArgs[i];
+                    for (int i = 0; i < concateSelectionArgs.length; i++) {
+                        concateSelectionArgs[i + 1] = selectionArgs[i];
                     }
-                }
-                else {
-                    concateSelectionArgs = new String []{uri.getLastPathSegment()};
+                } else {
+                    concateSelectionArgs = new String[]{uri.getLastPathSegment()};
                 }
 
 
-                deleteCount = db.delete(TBL_USERS, where ,  concateSelectionArgs);
+                deleteCount = db.delete(TBL_USERS, where, concateSelectionArgs);
                 break;
             }
             case URI_MATCH_USERS_USERNAME: {
                 String where = Users.COL_USERNAME + " = ?";
-                String [] concateSelectionArgs;
-                if ( !TextUtils.isEmpty(selection)){
+                String[] concateSelectionArgs;
+                if (!TextUtils.isEmpty(selection)) {
                     where += " AND " + selection;
-                    concateSelectionArgs = new String [selectionArgs.length+1];
+                    concateSelectionArgs = new String[selectionArgs.length + 1];
                     concateSelectionArgs[0] = uri.getLastPathSegment();
-                    for (int i = 0; i < concateSelectionArgs.length; i++)
-                    {
-                        concateSelectionArgs[i+1] = selectionArgs[i];
+                    for (int i = 0; i < concateSelectionArgs.length; i++) {
+                        concateSelectionArgs[i + 1] = selectionArgs[i];
                     }
-                }
-                else {
-                    concateSelectionArgs = new String []{uri.getLastPathSegment()};
+                } else {
+                    concateSelectionArgs = new String[]{uri.getLastPathSegment()};
                 }
 
 
-                deleteCount = db.delete(TBL_USERS, where ,  concateSelectionArgs);
+                deleteCount = db.delete(TBL_USERS, where, concateSelectionArgs);
                 break;
             }
 
@@ -310,8 +297,7 @@ public class ContentProviderStraggle extends ContentProvider {
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
 
-        if (deleteCount > 0)
-        {
+        if (deleteCount > 0) {
             getContext().getContentResolver().notifyChange(uri, null);
         }
 
@@ -323,8 +309,7 @@ public class ContentProviderStraggle extends ContentProvider {
         SQLiteDatabase db = mHelper.getWritableDatabase();
         int updateCount = 0;
 
-        switch (sUriMatcher.match(uri))
-        {
+        switch (sUriMatcher.match(uri)) {
             case URI_MATCH_IMAGETEXTURES:
                 updateCount = db.update(TBL_IMAGETEXTURES, contentValues, selection, selectionArgs);
                 break;
@@ -340,7 +325,7 @@ public class ContentProviderStraggle extends ContentProvider {
             }
             case URI_MATCH_IMAGETEXTURES_FILENAME: {
                 String where = ImageTextures.COL_FILENAME + " = ?";
-                updateCount = db.update(TBL_IMAGETEXTURES, contentValues, where, new String [] {uri.getLastPathSegment()});
+                updateCount = db.update(TBL_IMAGETEXTURES, contentValues, where, new String[]{uri.getLastPathSegment()});
                 break;
             }
             case URI_MATCH_USERS:
@@ -349,24 +334,23 @@ public class ContentProviderStraggle extends ContentProvider {
             case URI_MATCH_USERS_ID: {
                 String where = Users._ID + " = ?";
 
-                updateCount = db.update(TBL_USERS, contentValues, where, new String [] {uri.getLastPathSegment()});
+                updateCount = db.update(TBL_USERS, contentValues, where, new String[]{uri.getLastPathSegment()});
                 break;
             }
             case URI_MATCH_USERS_USERNAME: {
                 String where = Users.COL_USERNAME + " = ?";
-                updateCount = db.update(TBL_USERS, contentValues, where, new String [] {uri.getLastPathSegment()});
+                updateCount = db.update(TBL_USERS, contentValues, where, new String[]{uri.getLastPathSegment()});
                 break;
             }
             case URI_MATCH_CURRENT_LOCATION:
                 String where = ContentProviderDbSchema.CurrentLocation._ID + " = ?";
-                updateCount = db.update(TBL_CURRENT_LOCATION, contentValues, where, new String []{String.valueOf(ContentProviderOpenHelper.DEFAULT_CURRENT_LOCATION_ID)});
+                updateCount = db.update(TBL_CURRENT_LOCATION, contentValues, where, new String[]{String.valueOf(ContentProviderOpenHelper.DEFAULT_CURRENT_LOCATION_ID)});
                 break;
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }
 
-        if (updateCount > 0)
-        {
+        if (updateCount > 0) {
             getContext().getContentResolver().notifyChange(uri, null);
         }
 

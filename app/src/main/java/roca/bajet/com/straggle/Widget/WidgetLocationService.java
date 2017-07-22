@@ -44,11 +44,10 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
     private static String oneTimeTag = "onetime";
     private CountDownLatch mCountDownLatch;
     private Location mCurrentLocation;
-    private float [] distance = new float[3];
+    private float[] distance = new float[3];
 
 
-    public static OneoffTask createOneOffLocationTask(Context c)
-    {
+    public static OneoffTask createOneOffLocationTask(Context c) {
 
 
         OneoffTask oneoffTask = new OneoffTask.Builder()
@@ -76,8 +75,7 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
         long flex = 5L;
 
 
-
-        GcmNetworkManager.getInstance(c).cancelTask(periodicTag,WidgetLocationService.class);
+        GcmNetworkManager.getInstance(c).cancelTask(periodicTag, WidgetLocationService.class);
 
         // create a periodic task to pull stocks once every hour after the app has been opened. This
         // is so Widget data stays up to date.
@@ -97,8 +95,7 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
         return periodicTask;
     }
 
-    public static void stopPeriodicLocationTask(Context c)
-    {
+    public static void stopPeriodicLocationTask(Context c) {
         GcmNetworkManager.getInstance(c).cancelTask(periodicTag, WidgetLocationService.class);
         //GcmNetworkManager.getInstance(c).cancelAllTasks(WidgetLocationService.class);
 
@@ -134,11 +131,10 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
     @Override
     public void onLocationChanged(Location loc) {
 
-        Log.d(LOG_TAG,"onLocationChanged, " + String.format("%3.7f",loc.getLatitude()) + ", " + String.format("%3.7f",loc.getLongitude()));
+        Log.d(LOG_TAG, "onLocationChanged, " + String.format("%3.7f", loc.getLatitude()) + ", " + String.format("%3.7f", loc.getLongitude()));
 
 
-        if (mCountDownLatch.getCount() > 0)
-        {
+        if (mCountDownLatch.getCount() > 0) {
             mCurrentLocation = loc;
 
             ContentValues cv = new ContentValues();
@@ -148,11 +144,10 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
 
             String where = ContentProviderDbSchema.CurrentLocation._ID + " = ?";
 
-            getContentResolver().update(ContentProviderDbSchema.CurrentLocation.CONTENT_URI, cv, where, new String [] {String.valueOf(ContentProviderOpenHelper.DEFAULT_CURRENT_LOCATION_ID)});
+            getContentResolver().update(ContentProviderDbSchema.CurrentLocation.CONTENT_URI, cv, where, new String[]{String.valueOf(ContentProviderOpenHelper.DEFAULT_CURRENT_LOCATION_ID)});
             sendBroadcast(new Intent(StraggleWidgetProvider.ACTION_LOCATION_DATA_UPDATED));
 
-            if (mCountDownLatch != null)
-            {
+            if (mCountDownLatch != null) {
                 mCountDownLatch.countDown();
             }
         }
@@ -161,26 +156,23 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
     }
 
     @Override
-    public void onInitializeTasks ()
-    {
-        Log.d(LOG_TAG,"onInitializeTasks");
+    public void onInitializeTasks() {
+        Log.d(LOG_TAG, "onInitializeTasks");
 
 
     }
 
     @Override
-    public int onStartCommand (Intent intent, int flags, int startId)
-    {
-        Log.d(LOG_TAG,"onStartCommand");
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.d(LOG_TAG, "onStartCommand");
 
-        return super.onStartCommand(intent,flags,startId);
+        return super.onStartCommand(intent, flags, startId);
     }
 
     @Override
-    public void onCreate()
-    {
+    public void onCreate() {
         super.onCreate();
-        Log.d(LOG_TAG,"onCreate");
+        Log.d(LOG_TAG, "onCreate");
 
         createLocationRequest();
 
@@ -190,13 +182,12 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
                     .addApi(LocationServices.API)
                     .build();
         }
-        
+
     }
 
     @Override
-    public void onDestroy ()
-    {
-        Log.d(LOG_TAG,"onDestroy");
+    public void onDestroy() {
+        Log.d(LOG_TAG, "onDestroy");
 
 
         super.onDestroy();
@@ -209,8 +200,7 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
         int result = GcmNetworkManager.RESULT_FAILURE;
 
 
-        if ( mGoogleApiClient.blockingConnect().isSuccess() && mGoogleApiClient != null )
-        {
+        if (mGoogleApiClient.blockingConnect().isSuccess() && mGoogleApiClient != null) {
             mCountDownLatch = new CountDownLatch(1);
 
             startLocationUpdates();
@@ -221,11 +211,10 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
                 e.printStackTrace();
             }
 
-            if (mGoogleApiClient.isConnected())
-            {
+            if (mGoogleApiClient.isConnected()) {
                 stopLocationUpdates();
                 mGoogleApiClient.disconnect();
-            }else{
+            } else {
                 Log.d(LOG_TAG, "onRunTask, mGoogleApieClient NOT connected!");
             }
 
@@ -235,7 +224,6 @@ public class WidgetLocationService extends GcmTaskService implements LocationLis
 
         return result;
     }
-
 
 
 }

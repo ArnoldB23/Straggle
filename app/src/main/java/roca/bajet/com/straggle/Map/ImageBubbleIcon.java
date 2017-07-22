@@ -15,8 +15,7 @@ public class ImageBubbleIcon implements ClusterItem {
     public final Bitmap mBitmap;
     public boolean mToggleUpdate;
 
-    public ImageBubbleIcon (LatLng position, Bitmap bitmap)
-    {
+    public ImageBubbleIcon(LatLng position, Bitmap bitmap) {
         mPosition = position;
         mBitmap = bitmap;
     }

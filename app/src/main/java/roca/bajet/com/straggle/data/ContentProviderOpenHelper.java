@@ -11,13 +11,12 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class ContentProviderOpenHelper extends SQLiteOpenHelper {
 
-    private static final  String NAME = ContentProviderDbSchema.DB_NAME;
+    private static final String NAME = ContentProviderDbSchema.DB_NAME;
     private static final int VERSION = 10;
     public static long DEFAULT_USER_ID;
     public static long DEFAULT_CURRENT_LOCATION_ID = 1;
 
-    public ContentProviderOpenHelper (Context c)
-    {
+    public ContentProviderOpenHelper(Context c) {
         super(c, NAME, null, VERSION);
     }
 
@@ -38,11 +37,10 @@ public class ContentProviderOpenHelper extends SQLiteOpenHelper {
         sqLiteDatabase.insert(ContentProviderDbSchema.TBL_CURRENT_LOCATION, null, cv);
 
 
-
     }
 
     @Override
-    public void onConfigure(SQLiteDatabase db){
+    public void onConfigure(SQLiteDatabase db) {
         db.setForeignKeyConstraintsEnabled(true);
     }
 

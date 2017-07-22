@@ -4,7 +4,6 @@
     android:keepScreenOn="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background_mica"
     android:id="@+id/camera_framelayout">
 
     <android.opengl.GLSurfaceView
@@ -22,6 +21,7 @@
         android:elevation="@dimen/app_bar_height"
         android:focusable="true"
         android:id="@+id/take_picture_frame_button">
+
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -34,7 +34,6 @@
         </ImageView>
 
     </roca.bajet.com.straggle.RatioTabletFrameLayout>
-
 
 
 </FrameLayout>

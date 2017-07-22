@@ -74,92 +74,78 @@ public class TextureHelper {
     private static final String IMAGETEXTURE_LOC = "IMAGETEXTURE_LOC";
 
 
-    public static int getBestAspectRatio(BitmapFactory.Options options)
-    {
+    public static int getBestAspectRatio(BitmapFactory.Options options) {
         int width = options.outWidth;
         int height = options.outHeight;
-        float aspectRatio = (float)width/height;
+        float aspectRatio = (float) width / height;
 
         float bestFitError = 1000;
         int bestFitAspectRatio = 0;
 
-        if (Math.abs(aspectRatio - 1f) < bestFitError)
-        {
+        if (Math.abs(aspectRatio - 1f) < bestFitError) {
             bestFitError = Math.abs(aspectRatio - 1f);
             bestFitAspectRatio = ARATIO_1X1;
         }
 
-        if (Math.abs(aspectRatio - 2/3f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 2/3f);
+        if (Math.abs(aspectRatio - 2 / 3f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 2 / 3f);
             bestFitAspectRatio = ARATIO_2X3;
         }
 
-        if (Math.abs(aspectRatio - 3/5f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 3/5f);
+        if (Math.abs(aspectRatio - 3 / 5f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 3 / 5f);
             bestFitAspectRatio = ARATIO_3X5;
         }
 
-        if (Math.abs(aspectRatio - 3/4f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 3/4f);
+        if (Math.abs(aspectRatio - 3 / 4f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 3 / 4f);
             bestFitAspectRatio = ARATIO_3X4;
         }
 
-        if (Math.abs(aspectRatio - 4/5f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 4/5f);
+        if (Math.abs(aspectRatio - 4 / 5f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 4 / 5f);
             bestFitAspectRatio = ARATIO_4X5;
         }
 
-        if (Math.abs(aspectRatio - 5/7f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 5/7f);
+        if (Math.abs(aspectRatio - 5 / 7f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 5 / 7f);
             bestFitAspectRatio = ARATIO_5X7;
         }
 
-        if (Math.abs(aspectRatio - 9/16f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 9/16f);
+        if (Math.abs(aspectRatio - 9 / 16f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 9 / 16f);
             bestFitAspectRatio = ARATIO_9X16;
         }
 
 
         //landscape ratios
-        if (Math.abs(aspectRatio - 3/2f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 3/2f);
+        if (Math.abs(aspectRatio - 3 / 2f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 3 / 2f);
             bestFitAspectRatio = ARATIO_3X2;
         }
 
-        if (Math.abs(aspectRatio - 5/3f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 5/3f);
+        if (Math.abs(aspectRatio - 5 / 3f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 5 / 3f);
             bestFitAspectRatio = ARATIO_5X3;
         }
 
-        if (Math.abs(aspectRatio - 4/3f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 4/3f);
+        if (Math.abs(aspectRatio - 4 / 3f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 4 / 3f);
             bestFitAspectRatio = ARATIO_4X3;
         }
 
-        if (Math.abs(aspectRatio - 5/4f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 5/4f);
+        if (Math.abs(aspectRatio - 5 / 4f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 5 / 4f);
             bestFitAspectRatio = ARATIO_5X4;
         }
 
-        if (Math.abs(aspectRatio - 7/5f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 7/5f);
+        if (Math.abs(aspectRatio - 7 / 5f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 7 / 5f);
             bestFitAspectRatio = ARATIO_7X5;
         }
 
-        if (Math.abs(aspectRatio - 16/9f) < bestFitError)
-        {
-            bestFitError = Math.abs(aspectRatio - 16/9f);
+        if (Math.abs(aspectRatio - 16 / 9f) < bestFitError) {
+            bestFitError = Math.abs(aspectRatio - 16 / 9f);
             bestFitAspectRatio = ARATIO_16X9;
         }
 
@@ -188,6 +174,7 @@ public class TextureHelper {
 
         return inSampleSize;
     }
+
     public static Bitmap decodeSampledBitmapFromResource(Resources res, int resId,
                                                          int reqWidth, int reqHeight) {
 
@@ -205,7 +192,7 @@ public class TextureHelper {
     }
 
     public static Bitmap decodeSampledBitmapFromFile(String fileStr,
-                                                         int reqWidth, int reqHeight) {
+                                                     int reqWidth, int reqHeight) {
 
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -220,8 +207,8 @@ public class TextureHelper {
         return BitmapFactory.decodeFile(fileStr, options);
     }
 
-    public static Bitmap decodeSampledBitmapFromBytes(byte [] data,
-                                                     int reqWidth, int reqHeight) {
+    public static Bitmap decodeSampledBitmapFromBytes(byte[] data,
+                                                      int reqWidth, int reqHeight) {
 
         // First decode with inJustDecodeBounds=true to check dimensions
         final BitmapFactory.Options options = new BitmapFactory.Options();
@@ -280,7 +267,7 @@ public class TextureHelper {
         return output;
     }
 
-    public static Bitmap getLayeredBitmap(Bitmap [] bps, Context c) {
+    public static Bitmap getLayeredBitmap(Bitmap[] bps, Context c) {
         Bitmap output;
 
         /*
@@ -303,22 +290,21 @@ public class TextureHelper {
         */
         int width = bps[0].getWidth();
         int height = bps[0].getHeight();
-        output = Bitmap.createBitmap(width + bps.length*10, height + bps.length*10, Bitmap.Config.ARGB_8888);
+        output = Bitmap.createBitmap(width + bps.length * 10, height + bps.length * 10, Bitmap.Config.ARGB_8888);
 
-        Canvas canvas = new Canvas (output);
+        Canvas canvas = new Canvas(output);
         Rect entireRect = new Rect(0, 0, bps[0].getWidth(), bps[0].getHeight());
 
-        for (int i = 0; i < bps.length; i++)
-        {
-            int a = i*10;
-            Rect offsetRect = new Rect(a, a, bps[i].getWidth()+a, bps[i].getHeight()+a);
-            canvas.drawBitmap(bps[i], entireRect, offsetRect,null);
+        for (int i = 0; i < bps.length; i++) {
+            int a = i * 10;
+            Rect offsetRect = new Rect(a, a, bps[i].getWidth() + a, bps[i].getHeight() + a);
+            canvas.drawBitmap(bps[i], entireRect, offsetRect, null);
         }
 
         return output;
     }
 
-    public static Bitmap drawableToBitmap (Drawable drawable) {
+    public static Bitmap drawableToBitmap(Drawable drawable) {
 
         int width = drawable.getIntrinsicWidth();
         width = width > 0 ? width : 1;
@@ -334,16 +320,14 @@ public class TextureHelper {
     }
 
 
-    public static Bitmap scaleBitmap(int resId, Context context)
-    {
+    public static Bitmap scaleBitmap(int resId, Context context) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeResource(context.getResources(), resId, options);
         int aspect_ratio = getBestAspectRatio(options);
 
 
-        switch(aspect_ratio)
-        {
+        switch (aspect_ratio) {
             case ARATIO_1X1:
 
                 break;
@@ -364,162 +348,160 @@ public class TextureHelper {
         return null;
     }
 
-    public static float [] getTextureVertexSet(int aspect_ratio)
-    {
-        switch(aspect_ratio)
-        {
+    public static float[] getTextureVertexSet(int aspect_ratio) {
+        switch (aspect_ratio) {
             case ARATIO_1X1:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -1.5f, -1.5f,   0f, 1f,
-                        1.5f, -1.5f,    1f, 1f,
-                        1.5f,  1.5f,    1f, 0f,
-                        -1.5f,  1.5f,   0f, 0f,
-                        -1.5f, -1.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -1.5f, -1.5f, 0f, 1f,
+                        1.5f, -1.5f, 1f, 1f,
+                        1.5f, 1.5f, 1f, 0f,
+                        -1.5f, 1.5f, 0f, 0f,
+                        -1.5f, -1.5f, 0f, 1f
                 };
 
             case ARATIO_2X3:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -1f, -1.5f,   0f, 1f,
-                        1f, -1.5f,    1f, 1f,
-                        1f,  1.5f,    1f, 0f,
-                        -1f,  1.5f,   0f, 0f,
-                        -1f, -1.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -1f, -1.5f, 0f, 1f,
+                        1f, -1.5f, 1f, 1f,
+                        1f, 1.5f, 1f, 0f,
+                        -1f, 1.5f, 0f, 0f,
+                        -1f, -1.5f, 0f, 1f
 
                 };
 
             case ARATIO_3X5:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -1.5f, -2.5f,   0f, 1f,
-                        1.5f, -2.5f,    1f, 1f,
-                        1.5f,  2.5f,    1f, 0f,
-                        -1.5f,  2.5f,   0f, 0f,
-                        -1.5f, -2.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -1.5f, -2.5f, 0f, 1f,
+                        1.5f, -2.5f, 1f, 1f,
+                        1.5f, 2.5f, 1f, 0f,
+                        -1.5f, 2.5f, 0f, 0f,
+                        -1.5f, -2.5f, 0f, 1f
 
                 };
 
             case ARATIO_3X4:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -1.5f, -2f,   0f, 1f,
-                        1.5f, -2f,    1f, 1f,
-                        1.5f,  2f,    1f, 0f,
-                        -1.5f,  2f,   0f, 0f,
-                        -1.5f, -2f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -1.5f, -2f, 0f, 1f,
+                        1.5f, -2f, 1f, 1f,
+                        1.5f, 2f, 1f, 0f,
+                        -1.5f, 2f, 0f, 0f,
+                        -1.5f, -2f, 0f, 1f
 
                 };
 
             case ARATIO_4X5:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -2f, -2.5f,   0f, 1f,
-                        2f, -2.5f,    1f, 1f,
-                        2f,  2.5f,    1f, 0f,
-                        -2f,  2.5f,   0f, 0f,
-                        -2f, -2.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -2f, -2.5f, 0f, 1f,
+                        2f, -2.5f, 1f, 1f,
+                        2f, 2.5f, 1f, 0f,
+                        -2f, 2.5f, 0f, 0f,
+                        -2f, -2.5f, 0f, 1f
 
                 };
 
             case ARATIO_5X7:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -2.5f, -3.5f,   0f, 1f,
-                        2.5f, -3.5f,    1f, 1f,
-                        2.5f,  3.5f,    1f, 0f,
-                        -2.5f,  3.5f,   0f, 0f,
-                        -2.5f, -3.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -2.5f, -3.5f, 0f, 1f,
+                        2.5f, -3.5f, 1f, 1f,
+                        2.5f, 3.5f, 1f, 0f,
+                        -2.5f, 3.5f, 0f, 0f,
+                        -2.5f, -3.5f, 0f, 1f
 
                 };
 
             case ARATIO_9X16:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -1.125f, -2f,   0f, 1f,
-                        1.125f, -2f,    1f, 1f,
-                        1.125f,  2f,    1f, 0f,
-                        -1.125f,  2f,   0f, 0f,
-                        -1.125f, -2f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -1.125f, -2f, 0f, 1f,
+                        1.125f, -2f, 1f, 1f,
+                        1.125f, 2f, 1f, 0f,
+                        -1.125f, 2f, 0f, 0f,
+                        -1.125f, -2f, 0f, 1f
 
                 };
 
             case ARATIO_3X2:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -1.5f, -1f,   0f, 1f,
-                        1.5f, -1f,    1f, 1f,
-                        1.5f,  1f,    1f, 0f,
-                        -1.5f,  1f,   0f, 0f,
-                        -1.5f, -1f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -1.5f, -1f, 0f, 1f,
+                        1.5f, -1f, 1f, 1f,
+                        1.5f, 1f, 1f, 0f,
+                        -1.5f, 1f, 0f, 0f,
+                        -1.5f, -1f, 0f, 1f
 
                 };
 
             case ARATIO_5X3:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -2.5f, -1.5f,   0f, 1f,
-                        2.5f, -1.5f,    1f, 1f,
-                        2.5f,  1.5f,    1f, 0f,
-                        -2.5f,  1.5f,   0f, 0f,
-                        -2.5f, -1.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -2.5f, -1.5f, 0f, 1f,
+                        2.5f, -1.5f, 1f, 1f,
+                        2.5f, 1.5f, 1f, 0f,
+                        -2.5f, 1.5f, 0f, 0f,
+                        -2.5f, -1.5f, 0f, 1f
 
                 };
 
             case ARATIO_4X3:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -2f, -1.5f,   0f, 1f,
-                        2f, -1.5f,    1f, 1f,
-                        2f,  1.5f,    1f, 0f,
-                        -2f,  1.5f,   0f, 0f,
-                        -2f, -1.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -2f, -1.5f, 0f, 1f,
+                        2f, -1.5f, 1f, 1f,
+                        2f, 1.5f, 1f, 0f,
+                        -2f, 1.5f, 0f, 0f,
+                        -2f, -1.5f, 0f, 1f
 
                 };
 
             case ARATIO_5X4:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -2.5f, -2f,   0f, 1f,
-                        2.5f, -2f,    1f, 1f,
-                        2.5f,  2f,    1f, 0f,
-                        -2.5f,  2f,   0f, 0f,
-                        -2.5f, -2f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -2.5f, -2f, 0f, 1f,
+                        2.5f, -2f, 1f, 1f,
+                        2.5f, 2f, 1f, 0f,
+                        -2.5f, 2f, 0f, 0f,
+                        -2.5f, -2f, 0f, 1f
 
                 };
 
             case ARATIO_7X5:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -3.5f, -2.5f,   0f, 1f,
-                        3.5f, -2.5f,    1f, 1f,
-                        3.5f,  2.5f,    1f, 0f,
-                        -3.5f,  2.5f,   0f, 0f,
-                        -3.5f, -2.5f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -3.5f, -2.5f, 0f, 1f,
+                        3.5f, -2.5f, 1f, 1f,
+                        3.5f, 2.5f, 1f, 0f,
+                        -3.5f, 2.5f, 0f, 0f,
+                        -3.5f, -2.5f, 0f, 1f
 
                 };
 
             case ARATIO_16X9:
-                return new float [] {
+                return new float[]{
                         // Order of coordinates: X, Y, S, T
-                        0f,    0f,      0.5f, 0.5f,
-                        -2f, -1.125f,   0f, 1f,
-                        2f, -1.125f,    1f, 1f,
-                        2f,  1.125f,    1f, 0f,
-                        -2f,  1.125f,   0f, 0f,
-                        -2f, -1.125f,    0f, 1f
+                        0f, 0f, 0.5f, 0.5f,
+                        -2f, -1.125f, 0f, 1f,
+                        2f, -1.125f, 1f, 1f,
+                        2f, 1.125f, 1f, 0f,
+                        -2f, 1.125f, 0f, 0f,
+                        -2f, -1.125f, 0f, 1f
 
                 };
 
@@ -659,13 +641,17 @@ public class TextureHelper {
     public static final int MEDIA_TYPE_IMAGE = 1;
     public static final int MEDIA_TYPE_VIDEO = 2;
 
-    /** Create a file Uri for saving an image or video */
-    public static Uri getOutputMediaFileUri(int type){
+    /**
+     * Create a file Uri for saving an image or video
+     */
+    public static Uri getOutputMediaFileUri(int type) {
         return Uri.fromFile(getOutputMediaFile(type));
     }
 
-    /** Create a File for saving an image or video */
-    public static File getOutputMediaFile(int type){
+    /**
+     * Create a File for saving an image or video
+     */
+    public static File getOutputMediaFile(int type) {
         // To be safe, you should check that the SDCard is mounted
         // using Environment.getExternalStorageState() before doing this.
 
@@ -676,13 +662,12 @@ public class TextureHelper {
         // between applications and persist after your app has been uninstalled.
 
         // Create the storage directory if it does not exist
-        if (! mediaStorageDir.exists()){
-            if (! mediaStorageDir.mkdirs()){
+        if (!mediaStorageDir.exists()) {
+            if (!mediaStorageDir.mkdirs()) {
                 Log.d("MyCameraApp", "failed to create directory");
                 return null;
             }
         }
-
 
 
         // Create a media file name
@@ -692,12 +677,12 @@ public class TextureHelper {
 
 
         File mediaFile;
-        if (type == MEDIA_TYPE_IMAGE){
+        if (type == MEDIA_TYPE_IMAGE) {
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "IMG_"+ timeStamp + "_" +generatedString + ".jpg");
-        } else if(type == MEDIA_TYPE_VIDEO) {
+                    "IMG_" + timeStamp + "_" + generatedString + ".jpg");
+        } else if (type == MEDIA_TYPE_VIDEO) {
             mediaFile = new File(mediaStorageDir.getPath() + File.separator +
-                    "VID_"+ timeStamp + "_" +generatedString + ".mp4");
+                    "VID_" + timeStamp + "_" + generatedString + ".mp4");
         } else {
             return null;
         }
@@ -706,15 +691,15 @@ public class TextureHelper {
     }
 
 
-    public static String randomstring(int lo, int hi){
+    public static String randomstring(int lo, int hi) {
         int n = rand(lo, hi);
         byte b[] = new byte[n];
         for (int i = 0; i < n; i++)
-            b[i] = (byte)rand('a', 'z');
+            b[i] = (byte) rand('a', 'z');
         return new String(b, 0);
     }
 
-    private static int rand(int lo, int hi){
+    private static int rand(int lo, int hi) {
         java.util.Random rn = new java.util.Random();
         int n = hi - lo + 1;
         int i = rn.nextInt(n);
@@ -722,14 +707,14 @@ public class TextureHelper {
             i = -i;
         return lo + i;
     }
+
     //http://www.codecodex.com/wiki/Generate_a_random_password_or_random_string#Java
-    public static String randomstring(){
+    public static String randomstring() {
         return randomstring(5, 25);
     }
 
 
-    public static void saveContentProviderDataState (final Context c)
-    {
+    public static void saveContentProviderDataState(final Context c) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -742,8 +727,7 @@ public class TextureHelper {
 
 
                 try {
-                    if (mediaFile.exists())
-                    {
+                    if (mediaFile.exists()) {
                         mediaFile.delete();
                     }
 
@@ -752,8 +736,7 @@ public class TextureHelper {
 
                     Cursor cursor = c.getContentResolver().query(ContentProviderDbSchema.ImageTextures.CONTENT_URI, null, null, null, null);
 
-                    while (cursor.moveToNext())
-                    {
+                    while (cursor.moveToNext()) {
 
                         String imageFileName = cursor.getString(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_FILENAME));
                         String lon = String.valueOf(cursor.getDouble(cursor.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LON)));
@@ -766,8 +749,7 @@ public class TextureHelper {
 
                         pWriter.println(line);
 
-                        if (pWriter.checkError())
-                        {
+                        if (pWriter.checkError()) {
                             Log.d("saveContentProvider", " Error writing line!");
                         }
                     }
@@ -793,16 +775,12 @@ public class TextureHelper {
                 }
 
 
-
-
-
             }
         }).start();
 
     }
 
-    public static void restoreContentProviderDataState (final Context c)
-    {
+    public static void restoreContentProviderDataState(final Context c) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -826,14 +804,14 @@ public class TextureHelper {
 
                         String[] tokens = currentLine.split(",");
 
-                        Log.d("restoreContentProvider", tokens[0] + " " + tokens[1] + " " + tokens[2] + " " + tokens[3] + " " + tokens[4] );
+                        Log.d("restoreContentProvider", tokens[0] + " " + tokens[1] + " " + tokens[2] + " " + tokens[3] + " " + tokens[4]);
 
                         ContentValues cv = new ContentValues();
                         cv.put(ContentProviderDbSchema.ImageTextures.COL_FILENAME, tokens[0]);
                         cv.put(ContentProviderDbSchema.ImageTextures.COL_LON, tokens[1]);
                         cv.put(ContentProviderDbSchema.ImageTextures.COL_LAT, tokens[2]);
-                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE,tokens[3]);
-                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO,tokens[4]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ANGLE, tokens[3]);
+                        cv.put(ContentProviderDbSchema.ImageTextures.COL_ASPECT_RATIO, tokens[4]);
                         cv.put(ContentProviderDbSchema.ImageTextures.COL_USER_ID, ContentProviderOpenHelper.DEFAULT_USER_ID);
 
                         c.getContentResolver().insert(ContentProviderDbSchema.ImageTextures.CONTENT_URI, cv);
@@ -852,8 +830,7 @@ public class TextureHelper {
 
     }
 
-    public static void setImageTextureLocation (Context c, String fileStr, Location loc)
-    {
+    public static void setImageTextureLocation(Context c, String fileStr, Location loc) {
 
         HashSet<String> hashSet = new HashSet<>(2);
         hashSet.add(String.valueOf(loc.getLatitude()));
@@ -863,40 +840,36 @@ public class TextureHelper {
         prefs.edit().putStringSet(fileStr, hashSet).apply();
     }
 
-    public static Location getImageTextureLocation (Context c, String fileStr)
-    {
+    public static Location getImageTextureLocation(Context c, String fileStr) {
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(c);
-        HashSet<String> dataSet =(HashSet<String>) prefs.getStringSet(fileStr, null);
+        HashSet<String> dataSet = (HashSet<String>) prefs.getStringSet(fileStr, null);
 
         Location loc = new Location(LocationManager.GPS_PROVIDER);
 
 
         Iterator itr = dataSet.iterator();
-        while(itr.hasNext())
-        {
-            loc.setLatitude(Double.valueOf((String)itr.next()));
-            loc.setLongitude(Double.valueOf((String)itr.next()));
+        while (itr.hasNext()) {
+            loc.setLatitude(Double.valueOf((String) itr.next()));
+            loc.setLongitude(Double.valueOf((String) itr.next()));
         }
 
         return loc;
     }
 
 
-
     public static boolean deleteDirectory(File path) {
 
-        if( path.exists() ) {
+        if (path.exists()) {
             File[] files = path.listFiles();
-            for(int i=0; i<files.length; i++) {
-                if(files[i].isDirectory()) {
+            for (int i = 0; i < files.length; i++) {
+                if (files[i].isDirectory()) {
                     deleteDirectory(files[i]);
-                }
-                else {
+                } else {
                     files[i].delete();
                 }
             }
         }
-        return(path.delete());
+        return (path.delete());
     }
 }

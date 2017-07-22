@@ -4,7 +4,6 @@
     android:keepScreenOn="true"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background_mica"
     android:id="@+id/camera_framelayout">
 
     <android.opengl.GLSurfaceView

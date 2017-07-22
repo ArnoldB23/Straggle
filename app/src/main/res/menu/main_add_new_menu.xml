@@ -3,12 +3,11 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
 
-
-    <item android:id="@+id/action_ok"
-          android:title="select ok"
-          android:icon="@drawable/ok_icon_48"
-          app:showAsAction="always"/>
-
+    <item
+        android:id="@+id/action_ok"
+        android:title="@string/action_ok_title"
+        android:icon="@drawable/ok_icon_48"
+        app:showAsAction="always"/>
 
 
 </menu>

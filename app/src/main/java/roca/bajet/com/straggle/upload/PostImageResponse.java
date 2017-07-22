@@ -22,7 +22,7 @@ public class PostImageResponse {
     @Expose
     public Integer status;
 
-    public static class Data{
+    public static class Data {
 
         @SerializedName("id")
         @Expose

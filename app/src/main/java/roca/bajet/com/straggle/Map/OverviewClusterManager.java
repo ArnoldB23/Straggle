@@ -18,8 +18,9 @@ public class OverviewClusterManager<T extends ClusterItem> extends ClusterManage
     private onClusterManagerCallback mOnClusterManagerCallback;
 
     public interface onClusterManagerCallback {
-        void onCameraIdle (float cameraRadius);
-        void onMarkerClickListener (Marker marker);
+        void onCameraIdle(float cameraRadius);
+
+        void onMarkerClickListener(Marker marker);
     }
 
     public OverviewClusterManager(Context context, GoogleMap map) {
@@ -29,20 +30,18 @@ public class OverviewClusterManager<T extends ClusterItem> extends ClusterManage
         mGoogleMap = map;
     }
 
-    public void setOnClusterManagerCallback(onClusterManagerCallback cm)
-    {
+    public void setOnClusterManagerCallback(onClusterManagerCallback cm) {
         mOnClusterManagerCallback = cm;
     }
 
     @Override
     public void onCameraIdle() {
         float zoom = mGoogleMap.getCameraPosition().zoom;
-        double d = 87601515 * Math.pow(0.50269686,zoom);
+        double d = 87601515 * Math.pow(0.50269686, zoom);
 
-        float cameraRadius = (float) d/2;
+        float cameraRadius = (float) d / 2;
 
-        if (mOnClusterManagerCallback != null)
-        {
+        if (mOnClusterManagerCallback != null) {
             mOnClusterManagerCallback.onCameraIdle(cameraRadius);
         }
 
@@ -50,8 +49,7 @@ public class OverviewClusterManager<T extends ClusterItem> extends ClusterManage
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        if (mOnClusterManagerCallback != null)
-        {
+        if (mOnClusterManagerCallback != null) {
             mOnClusterManagerCallback.onMarkerClickListener(marker);
         }
 

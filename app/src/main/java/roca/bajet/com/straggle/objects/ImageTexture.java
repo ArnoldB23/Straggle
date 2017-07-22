@@ -27,11 +27,11 @@ public class ImageTexture {
     private static final int TEXTURE_COORDINATES_COMPONENT_COUNT = 2;
     private static final int STRIDE = (POSITION_COMPONENT_COUNT + TEXTURE_COORDINATES_COMPONENT_COUNT) * VertexArray.BYTES_PER_FLOAT;
     public int mTextureId;
-    private float [] mModelMatrix = new float[16];
-    public float [] cameraTranslateMatrix = new float[16];
+    private float[] mModelMatrix = new float[16];
+    public float[] cameraTranslateMatrix = new float[16];
     public float mCameraRotationAngle;
-    public Float[] mTranslationValuesXYZ = new Float [3];
-    public Float[] mRotationValuesXYZ = new Float [3];
+    public Float[] mTranslationValuesXYZ = new Float[3];
+    public Float[] mRotationValuesXYZ = new Float[3];
     public float opacity;
     public Location mLocation;
     public String mFilename;
@@ -58,8 +58,8 @@ public class ImageTexture {
         mTextureId = TextureHelper.loadTexture(c, bitmap);
 
         //mTranslationValuesXYZ = new Float [] {0f, -1.9f, -2f};
-        mTranslationValuesXYZ = new Float [] {0f, 0f, -2f};
-        mRotationValuesXYZ = new Float [] {0f, 0f, 0f};
+        mTranslationValuesXYZ = new Float[]{0f, 0f, -2f};
+        mRotationValuesXYZ = new Float[]{0f, 0f, 0f};
         mCameraRotationAngle = 155f;
         opacity = 0.8f;
         mLocation = location;
@@ -72,7 +72,7 @@ public class ImageTexture {
 
         final BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile( filestr, options);
+        BitmapFactory.decodeFile(filestr, options);
         int aratioNum = TextureHelper.getBestAspectRatio(options);
         Log.d("ImageTexture", "Aspect ratio num : " + aratioNum);
 
@@ -88,8 +88,8 @@ public class ImageTexture {
         mTextureId = TextureHelper.loadTexture(c, bitmap);
 
         //mTranslationValuesXYZ = new Float [] {0f, -1.9f, -2f};
-        mTranslationValuesXYZ = new Float [] {0f, 0f, -2f};
-        mRotationValuesXYZ = new Float [] {0f, 0f, 0f};
+        mTranslationValuesXYZ = new Float[]{0f, 0f, -2f};
+        mRotationValuesXYZ = new Float[]{0f, 0f, 0f};
         mCameraRotationAngle = 155f;
         opacity = 0.8f;
         mLocation = location;
@@ -118,12 +118,11 @@ public class ImageTexture {
     }
 
 
-    public float [] calculateModelMatrix()
-    {
+    public float[] calculateModelMatrix() {
         setIdentityM(mModelMatrix, 0);
 
         rotateM(mModelMatrix, 0, -mCameraRotationAngle, 0, 1, 0); //rotate around camera
-        multiplyMM(mModelMatrix, 0,  mModelMatrix, 0, cameraTranslateMatrix, 0);//translate camera z position
+        multiplyMM(mModelMatrix, 0, mModelMatrix, 0, cameraTranslateMatrix, 0);//translate camera z position
         translateM(mModelMatrix, 0, mTranslationValuesXYZ[0], mTranslationValuesXYZ[1], mTranslationValuesXYZ[2]);//translate object with respect to own axis
 
         rotateM(mModelMatrix, 0, mRotationValuesXYZ[0], 1, 0, 0);   //rotate around own x axis
@@ -133,24 +132,20 @@ public class ImageTexture {
         return mModelMatrix;
     }
 
-    public void moveFromToCamera(float distance)
-    {
+    public void moveFromToCamera(float distance) {
         mTranslationValuesXYZ[2] = distance;
     }
 
-    public void rotateAroundCamera(float angle)
-    {
+    public void rotateAroundCamera(float angle) {
         mCameraRotationAngle = angle;
 
     }
 
     //Order of values: x,y,z
-    public void translateImageTexture(Float [] values) {
+    public void translateImageTexture(Float[] values) {
 
-        for(int i = 0; i < mTranslationValuesXYZ.length; i++)
-        {
-            if (values[i] != null)
-            {
+        for (int i = 0; i < mTranslationValuesXYZ.length; i++) {
+            if (values[i] != null) {
                 mTranslationValuesXYZ[i] = values[i];
             }
         }
@@ -158,12 +153,10 @@ public class ImageTexture {
 
     //Rotate around own x,y,z axis
     //Order of values: x,y,z
-    public void rotateImageTexture(Float [] values) {
+    public void rotateImageTexture(Float[] values) {
 
-        for(int i = 0; i < mRotationValuesXYZ.length; i++)
-        {
-            if (values[i] != null)
-            {
+        for (int i = 0; i < mRotationValuesXYZ.length; i++) {
+            if (values[i] != null) {
                 mRotationValuesXYZ[i] = values[i];
             }
         }

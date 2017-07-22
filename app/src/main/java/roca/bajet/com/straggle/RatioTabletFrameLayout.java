@@ -18,9 +18,8 @@ public class RatioTabletFrameLayout extends FrameLayout {
     }
 
     @Override
-    protected void onMeasure(int widthSpec, int heightSpec)
-    {
-        int newHeight = MeasureSpec.getSize(widthSpec) * 1/6;
+    protected void onMeasure(int widthSpec, int heightSpec) {
+        int newHeight = MeasureSpec.getSize(widthSpec) * 1 / 6;
         int newHeightSpec = MeasureSpec.makeMeasureSpec(newHeight, MeasureSpec.EXACTLY);
         super.onMeasure(widthSpec, newHeightSpec);
     }

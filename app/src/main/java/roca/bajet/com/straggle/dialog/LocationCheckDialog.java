@@ -20,15 +20,16 @@ public class LocationCheckDialog extends DialogFragment {
     private final String LOG_TAG = "LocationCheckDialog";
 
     public interface LocationCheckDialogCallback {
-        void onPositiveButton ();
-        void onNegativeButton ();
+        void onPositiveButton();
+
+        void onNegativeButton();
+
         void onCancelled();
     }
 
     public LocationCheckDialogCallback mLocationCheckDialogCallback;
 
-    public void setOnLocationCheckDialogCallback(LocationCheckDialogCallback cb)
-    {
+    public void setOnLocationCheckDialogCallback(LocationCheckDialogCallback cb) {
         mLocationCheckDialogCallback = cb;
     }
 
@@ -44,8 +45,7 @@ public class LocationCheckDialog extends DialogFragment {
 
                         Log.d(LOG_TAG, "onPositiveButton...");
 
-                        if (mLocationCheckDialogCallback != null)
-                        {
+                        if (mLocationCheckDialogCallback != null) {
                             mLocationCheckDialogCallback.onPositiveButton();
                         }
 
@@ -58,8 +58,7 @@ public class LocationCheckDialog extends DialogFragment {
 
                         Log.d(LOG_TAG, "onNegativeButton...");
 
-                        if (mLocationCheckDialogCallback != null)
-                        {
+                        if (mLocationCheckDialogCallback != null) {
                             mLocationCheckDialogCallback.onNegativeButton();
                         }
 
@@ -71,13 +70,11 @@ public class LocationCheckDialog extends DialogFragment {
     }
 
     @Override
-    public void onCancel (DialogInterface dialog)
-    {
+    public void onCancel(DialogInterface dialog) {
         Log.d(LOG_TAG, "onCancel...");
 
 
-        if (mLocationCheckDialogCallback != null)
-        {
+        if (mLocationCheckDialogCallback != null) {
             mLocationCheckDialogCallback.onCancelled();
         }
         super.onCancel(dialog);

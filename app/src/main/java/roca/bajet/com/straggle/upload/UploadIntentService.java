@@ -57,7 +57,6 @@ public class UploadIntentService extends IntentService {
     }
 
 
-
     @Override
     protected void onHandleIntent(Intent intent) {
         Log.d(LOG_TAG, "onHandleIntent");
@@ -78,8 +77,7 @@ public class UploadIntentService extends IntentService {
         c.close();
 
 
-        if (intent.getStringExtra("tag").equals(POSTIMAGE))
-        {
+        if (intent.getStringExtra("tag").equals(POSTIMAGE)) {
             final Long id = intent.getLongExtra(POSTIMAGE_ID, -1);
             MediaType MEDIA_TYPE = MediaType.parse("image/jpeg");
             String filename = intent.getStringExtra(POSTIMAGE);
@@ -98,15 +96,14 @@ public class UploadIntentService extends IntentService {
                 response = mImgurService.postImage(BuildConfig.IMGUR_AUTHORIZATION, requestBody).execute();
 
 
-                if (response.isSuccessful())
-                {
+                if (response.isSuccessful()) {
                     ContentValues cv = new ContentValues();
                     cv.put(ContentProviderDbSchema.ImageTextures.COL_URL, response.body().data.link);
                     cv.put(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH, response.body().data.deletehash);
 
                     Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(mDefaultUser);
                     String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                    String selectionArgs [] = {String.valueOf(id)};
+                    String selectionArgs[] = {String.valueOf(id)};
                     int updated = getContentResolver().update(updateIdUri, cv, where, selectionArgs);
                     final String link = response.body().data.link;
                     Log.d(LOG_TAG, "postImage onResponse, updated : " + updated);
@@ -119,7 +116,7 @@ public class UploadIntentService extends IntentService {
                     });
 
                     Log.d(LOG_TAG, "postImage execute, Successful HTTP response");
-                }else{
+                } else {
                     Log.d(LOG_TAG, "postImage execute, Failed HTTP response, code: " + response.code() + ", " + response.body().data.error);
                     mUIHandler.post(new Runnable() {
                         @Override
@@ -139,52 +136,44 @@ public class UploadIntentService extends IntentService {
                 });
             }
 
-        }
-
-        else if(intent.getStringExtra("tag").equals(DELETEIMAGE))
-        {
+        } else if (intent.getStringExtra("tag").equals(DELETEIMAGE)) {
             String deletehash = intent.getStringExtra(DELETEIMAGE);
             Response<DeleteImageResponse> response = null;
             try {
                 response = mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).execute();
 
-                if (response.isSuccessful())
-                {
+                if (response.isSuccessful()) {
                     Log.d(LOG_TAG, "onResponse, Successful HTTP response");
 
-                }else{
-                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : "  + response.code());
+                } else {
+                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : " + response.code());
                 }
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.toString());
             }
 
-        }
-
-        else if(intent.getStringExtra("tag").equals(DELETEIMAGEANDRECORD))
-        {
+        } else if (intent.getStringExtra("tag").equals(DELETEIMAGEANDRECORD)) {
             String deletehash = intent.getStringExtra(DELETEIMAGEANDRECORD);
             final Long id = intent.getLongExtra(DELETEIMAGEANDRECORD_ID, -1);
             Response<DeleteImageResponse> response = null;
             try {
                 response = mImgurService.deleteImage(BuildConfig.IMGUR_AUTHORIZATION, deletehash).execute();
 
-                if (response.isSuccessful())
-                {
+                if (response.isSuccessful()) {
                     ContentValues cv = new ContentValues();
                     cv.putNull(ContentProviderDbSchema.ImageTextures.COL_URL);
                     cv.putNull(ContentProviderDbSchema.ImageTextures.COL_DELETE_HASH);
 
                     Uri updateIdUri = ContentProviderDbSchema.ImageTextures.buildImageTextureUriWithUserId(mDefaultUser);
                     String where = ContentProviderDbSchema.ImageTextures._ID + " = ?";
-                    String selectionArgs [] = {String.valueOf(id)};
+                    String selectionArgs[] = {String.valueOf(id)};
                     int updated = getContentResolver().update(updateIdUri, cv, where, selectionArgs);
 
 
                     Log.d(LOG_TAG, "onResponse, Successful HTTP response, updated : " + updated);
 
-                }else{
-                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : "  + response.code());
+                } else {
+                    Log.d(LOG_TAG, "onResponse, Failed HTTP response code : " + response.code());
                 }
             } catch (IOException e) {
                 Log.e(LOG_TAG, e.toString());

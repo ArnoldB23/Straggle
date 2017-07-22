@@ -51,13 +51,12 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     private final float[] cameraTranslateMatrix = new float[16];
     private final float[] modelSensorMatrix = new float[16];
     private final float[] viewMatrix = new float[16];
-    private Float[] modelValues = new Float [6];
-    private Float[] viewValues = new Float [9];
+    private Float[] modelValues = new Float[6];
+    private Float[] viewValues = new Float[9];
 
     public float mAzimuth;
 
     public float[] orientation = new float[3];
-
 
 
     private Location mCurrentCameraLocation;
@@ -77,29 +76,25 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     private GLSurfaceView mGLSurfaceView;
 
 
-
-    public interface OrientationCallback
-    {
+    public interface OrientationCallback {
         void onOrientationChange(int orientation);
+
         void onAzimuthOrientationChange(double orientation);
     }
 
-    public void setOnOrientationCallback(OrientationCallback callback)
-    {
+    public void setOnOrientationCallback(OrientationCallback callback) {
 
         mOrientationCallback = callback;
     }
 
-    public CameraRenderer (Context c, GLSurfaceView gl)
-    {
+    public CameraRenderer(Context c, GLSurfaceView gl) {
         mContext = c;
         mGLSurfaceView = gl;
-        mSensorManager =(SensorManager)mContext.getSystemService(SENSOR_SERVICE);
+        mSensorManager = (SensorManager) mContext.getSystemService(SENSOR_SERVICE);
 
         mRotationVectorSensor = mSensorManager.getDefaultSensor(ROTATIONSENSORTYPE);
 
-        if (mRotationVectorSensor == null)
-        {
+        if (mRotationVectorSensor == null) {
             Log.d("CameraRenderer", "mAccelerometer is null");
         }
 
@@ -136,7 +131,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         // Set the OpenGL viewport to fill the entire surface.
         glViewport(0, 0, width, height);
 
-        perspectiveM(projectionMatrix, 0, 40.3f, (float) width/height, 0f, 10000f);
+        perspectiveM(projectionMatrix, 0, 40.3f, (float) width / height, 0f, 10000f);
 
         setIdentityM(cameraTranslateMatrix, 0);
         translateM(cameraTranslateMatrix, 0, 0, 0, -2);
@@ -147,22 +142,21 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     private final int TOTALCAMERASTEPS = 60;
     private int mCameraStep = 0;
 
-    public static Location calculateDestinationLocation(Location initLoc, float bearing, float distance)
-    {
+    public static Location calculateDestinationLocation(Location initLoc, float bearing, float distance) {
 
         double R = 6371e3f; //Radius of the Earth
-        double delta = distance/R;
+        double delta = distance / R;
 
         bearing = (float) Math.toRadians(bearing);
 
 
-        double lat1 = (float)Math.toRadians(initLoc.getLatitude());
-        double lon1 = (float)Math.toRadians(initLoc.getLongitude());
+        double lat1 = (float) Math.toRadians(initLoc.getLatitude());
+        double lon1 = (float) Math.toRadians(initLoc.getLongitude());
 
-        double lat2 = Math.asin( Math.sin(lat1)*Math.cos(delta) + Math.cos(lat1)*Math.sin(delta)*Math.cos(bearing));
+        double lat2 = Math.asin(Math.sin(lat1) * Math.cos(delta) + Math.cos(lat1) * Math.sin(delta) * Math.cos(bearing));
 
-        double lon2 = lon1 + Math.atan2(Math.sin(bearing)*Math.sin(delta)*Math.cos(lat1),
-                Math.cos(delta)-Math.sin(lat1)*Math.sin(lat2));
+        double lon2 = lon1 + Math.atan2(Math.sin(bearing) * Math.sin(delta) * Math.cos(lat1),
+                Math.cos(delta) - Math.sin(lat1) * Math.sin(lat2));
 
         Location destinationLoc = new Location(LocationManager.GPS_PROVIDER);
         setCoordinates(destinationLoc, Math.toDegrees(lat2), Math.toDegrees(lon2));
@@ -182,29 +176,21 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         Location drawCameraLocation;
 
         //Don't draw until camera location is known
-        if(mCurrentCameraLocation == null && mNewCameraLocation == null)
-        {
+        if (mCurrentCameraLocation == null && mNewCameraLocation == null) {
             //Log.d(LOG_TAG, "onDraw 1");
             return;
-        }
-
-        else if (mCurrentCameraLocation == null && mNewCameraLocation != null)
-        {
+        } else if (mCurrentCameraLocation == null && mNewCameraLocation != null) {
             //Log.d(LOG_TAG, "onDraw 2");
             mCurrentCameraLocation = mNewCameraLocation;
             drawCameraLocation = mCurrentCameraLocation;
-        }
-
-        else if (mCurrentCameraLocation != null && mNewCameraLocation != null && mTargetCameraLocation == null)
-        {
+        } else if (mCurrentCameraLocation != null && mNewCameraLocation != null && mTargetCameraLocation == null) {
             //Log.d(LOG_TAG, "onDraw 3");
 
             float distance = mNewCameraLocation.distanceTo(mCurrentCameraLocation);
 
             ///Increment step to target location when new camera location
             // is greater than 1.5 meters from current location
-            if (distance > 1.5f)
-            {
+            if (distance > 1.5f) {
                 mTargetCameraLocation = mNewCameraLocation;
             }
 
@@ -212,13 +198,12 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
         }
 
         //Provide increment location (if necessary) for smooth changes in camera positions
-        else if (mCurrentCameraLocation != null && mTargetCameraLocation != null)
-        {
+        else if (mCurrentCameraLocation != null && mTargetCameraLocation != null) {
             //Log.d(LOG_TAG, "onDraw 4");
             float cameraDistance = mCurrentCameraLocation.distanceTo(mTargetCameraLocation);
 
 
-            float x = (float)mCameraStep/TOTALCAMERASTEPS;
+            float x = (float) mCameraStep / TOTALCAMERASTEPS;
             //float y = (float)Math.pow(x,3)*(x*(6*x-15)+10);
             //float y = (float)Math.pow(x,2)*(3-2*x); //smoothstep
             float y = x;
@@ -226,22 +211,20 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             float incDistance = y * cameraDistance;
             float bearing = mCurrentCameraLocation.bearingTo(mTargetCameraLocation);
 
-            bearing = (bearing +360)%360;
+            bearing = (bearing + 360) % 360;
 
             drawCameraLocation = calculateDestinationLocation(mCurrentCameraLocation, bearing, incDistance);
             drawCameraLocation.setAccuracy(mTargetCameraLocation.getAccuracy());
 
             mCameraStep++;
 
-            if (mCameraStep == TOTALCAMERASTEPS)
-            {
+            if (mCameraStep == TOTALCAMERASTEPS) {
                 //mCurrentCameraLocation = mTargetCameraLocation;
                 mCurrentCameraLocation = drawCameraLocation;
                 mTargetCameraLocation = null;
                 mCameraStep = 0;
             }
-        }
-        else {//Never should come to this
+        } else {//Never should come to this
             Log.d(LOG_TAG, "onDraw 5");
 
             drawCameraLocation = mCurrentCameraLocation;
@@ -259,11 +242,10 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
 
         //Process each image texture with drawCameraLocation
-        for(ImageTexture it : mImageTextures) {
+        for (ImageTexture it : mImageTextures) {
 
 
-            if (it == null)
-            {
+            if (it == null) {
                 return;
             }
 
@@ -290,23 +272,21 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             ItAngle = (drawCameraLocation.bearingTo(it.mLocation) + 360) % 360;
 
 
-            if (distance != 0 || ItAngle != 0.0f){
-                it.rotateAroundCamera((float) ItAngle );
-                it.moveFromToCamera((float)-distance * 0.79f);
+            if (distance != 0 || ItAngle != 0.0f) {
+                it.rotateAroundCamera((float) ItAngle);
+                it.moveFromToCamera((float) -distance * 0.79f);
             }
 
 
-
-            Log.d(LOG_TAG, "onDrawFrame: distance = " + distance + " > " + (drawCameraLocation.getAccuracy() /0.68f)  +  ", ItAngle = " +ItAngle  );
+            Log.d(LOG_TAG, "onDrawFrame: distance = " + distance + " > " + (drawCameraLocation.getAccuracy() / 0.68f) + ", ItAngle = " + ItAngle);
             Log.d(LOG_TAG, "onDrawFrame: drawCameraLocation = " + drawCameraLocation.getLatitude() + ", " + drawCameraLocation.getLongitude()
-            + "   " + it.mLocation.getLatitude() + ", " + it.mLocation.getLongitude());
+                    + "   " + it.mLocation.getLatitude() + ", " + it.mLocation.getLongitude());
 
 
-            String debugStr = "Camera: " +  String.format("%5.6f",drawCameraLocation.getLatitude()) + ", " + String.format("%5.6f",drawCameraLocation.getLongitude())
-                    + "\nAccuracy: " + String.format("%5.7f",drawCameraLocation.getAccuracy()) + ", Z: " +  String.format("%3.1f", mAzimuth)
+            String debugStr = "Camera: " + String.format("%5.6f", drawCameraLocation.getLatitude()) + ", " + String.format("%5.6f", drawCameraLocation.getLongitude())
+                    + "\nAccuracy: " + String.format("%5.7f", drawCameraLocation.getAccuracy()) + ", Z: " + String.format("%3.1f", mAzimuth)
                     //+ "\nImage: " + String.format("%5.7f",it.mLocation.getLatitude()) + ", " + String.format("%5.7f",it.mLocation.getLongitude())
                     + "\nDistance: " + String.format("%5.5f", distance) + ", ItAngle: " + String.format("%3.7f", it.mCameraRotationAngle);
-
 
 
             float[] modelMatrix = it.calculateModelMatrix();
@@ -319,22 +299,19 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     }
 
 
-    public static void setCoordinates(Location loc, double lat, double lon)
-    {
+    public static void setCoordinates(Location loc, double lat, double lon) {
         loc.setLatitude(lat);
         loc.setLongitude(lon);
     }
 
 
-    public void stopReadingSensor()
-    {
+    public void stopReadingSensor() {
         mSensorManager.unregisterListener(this);
 
 
     }
 
-    public void startReadingSensor()
-    {
+    public void startReadingSensor() {
         // 10 ms updates.
         mSensorManager.registerListener(this, mRotationVectorSensor, 10000);
     }
@@ -350,40 +327,38 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
             SensorManager.getRotationMatrixFromVector(rotationMatrix, sensorEvent.values);
 
 
-            float [] rotateOrientation = new float[3];
-            SensorManager.getOrientation(rotationMatrix,rotateOrientation);
+            float[] rotateOrientation = new float[3];
+            SensorManager.getOrientation(rotationMatrix, rotateOrientation);
 
 
-            float [] quaternion = new float [4];
+            float[] quaternion = new float[4];
             SensorManager.getQuaternionFromVector(quaternion, sensorEvent.values);
 
 
-            float [] baseAzimuthVector = new float [] {0,0,0,-1}; //w,x,y,z
-            float [] northVector = new float [] {0,0,1,0};
-            float [] h = new float [] {sensorEvent.values[3],sensorEvent.values[0],sensorEvent.values[1],sensorEvent.values[2]};
-            float [] hprime = new float [] {h[0], -h[1], -h[2], -h[3]};
+            float[] baseAzimuthVector = new float[]{0, 0, 0, -1}; //w,x,y,z
+            float[] northVector = new float[]{0, 0, 1, 0};
+            float[] h = new float[]{sensorEvent.values[3], sensorEvent.values[0], sensorEvent.values[1], sensorEvent.values[2]};
+            float[] hprime = new float[]{h[0], -h[1], -h[2], -h[3]};
 
-            float [] rotationAzimuthVector = quatmultiply(quatmultiply(h,baseAzimuthVector),hprime);
-            float [] normRotationVector = normalizeVector(rotationAzimuthVector);
+            float[] rotationAzimuthVector = quatmultiply(quatmultiply(h, baseAzimuthVector), hprime);
+            float[] normRotationVector = normalizeVector(rotationAzimuthVector);
             normRotationVector[3] = 0;
 
             float angle = getAngleBetweenVectors(northVector, normRotationVector);
             angle *= Math.signum(rotationAzimuthVector[1]);
 
 
-            float [] baseYCameraOrientationVector = new float [] {0,0,1,0}; //w,x,y,z
-            float [] rotationYCameraOrientationVector = quatmultiply(quatmultiply(h,baseYCameraOrientationVector),hprime);
-            float [] baseXCameraOrientationVector = new float [] {0,1,0,0}; //w,x,y,z
-            float [] rotationXCameraOrientationVector = quatmultiply(quatmultiply(h,baseXCameraOrientationVector),hprime);
+            float[] baseYCameraOrientationVector = new float[]{0, 0, 1, 0}; //w,x,y,z
+            float[] rotationYCameraOrientationVector = quatmultiply(quatmultiply(h, baseYCameraOrientationVector), hprime);
+            float[] baseXCameraOrientationVector = new float[]{0, 1, 0, 0}; //w,x,y,z
+            float[] rotationXCameraOrientationVector = quatmultiply(quatmultiply(h, baseXCameraOrientationVector), hprime);
 
 
-
-            if (mOrientationCallback != null)
-            {
-                mAzimuth = (float) ((Math.toDegrees( angle ) + 360 ) % 360);
+            if (mOrientationCallback != null) {
+                mAzimuth = (float) ((Math.toDegrees(angle) + 360) % 360);
                 //azimuth = Math.toDegrees(angle);
                 mOrientationCallback.onAzimuthOrientationChange(mAzimuth);
-                mOrientationCallback.onOrientationChange(getOrientationFromVectors(rotationXCameraOrientationVector[3],rotationYCameraOrientationVector[3]));
+                mOrientationCallback.onOrientationChange(getOrientationFromVectors(rotationXCameraOrientationVector[3], rotationYCameraOrientationVector[3]));
             }
 
             //mGLSurfaceView.requestRender();
@@ -395,27 +370,20 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
 
     }
 
-    public static int getOrientationFromVectors(float xZVector, float yZVector)
-    {
+    public static int getOrientationFromVectors(float xZVector, float yZVector) {
         //landscape
-        if (Math.abs(xZVector) > 0.75f)
-        {
-            if (xZVector > 0)
-            {
+        if (Math.abs(xZVector) > 0.75f) {
+            if (xZVector > 0) {
                 return 0;
-            }
-            else{
+            } else {
                 return 180;
             }
         }
         //portrait
-        else if (Math.abs(yZVector) > 0.75f)
-        {
-            if (yZVector > 0)
-            {
+        else if (Math.abs(yZVector) > 0.75f) {
+            if (yZVector > 0) {
                 return 90;
-            }
-            else{
+            } else {
                 //return 270;
                 return 90; //Treat 270 degree rotation as upside down portrait
             }
@@ -426,29 +394,25 @@ public class CameraRenderer implements GLSurfaceView.Renderer, SensorEventListen
     }
 
 
-    public static float getAngleBetweenVectors(float [] u, float []v)
-    {
-        return (float)Math.acos((u[0]*v[0]+u[1]*v[1]+u[2]*v[2]+u[3]*v[3])/(getVectorMag(u)*getVectorMag(v)));
+    public static float getAngleBetweenVectors(float[] u, float[] v) {
+        return (float) Math.acos((u[0] * v[0] + u[1] * v[1] + u[2] * v[2] + u[3] * v[3]) / (getVectorMag(u) * getVectorMag(v)));
     }
 
-    public static float [] normalizeVector(float [] vector)
-    {
+    public static float[] normalizeVector(float[] vector) {
         float mag = getVectorMag(vector);
-        return new float [] {vector[0]/mag, vector[1]/mag, vector[2]/mag, vector[3]/mag };
+        return new float[]{vector[0] / mag, vector[1] / mag, vector[2] / mag, vector[3] / mag};
     }
 
-    public static float getVectorMag(float [] vector)
-    {
-        return (float) Math.sqrt( Math.pow(vector[0],2)+Math.pow(vector[1],2)+Math.pow(vector[2],2)+Math.pow(vector[3],2) );
+    public static float getVectorMag(float[] vector) {
+        return (float) Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2) + Math.pow(vector[3], 2));
     }
 
-    public static float [] quatmultiply(float [] q, float []r)
-    {
-        float [] n = new float [4];
-        n[0] = r[0]*q[0]-r[1]*q[1]-r[2]*q[2]-r[3]*q[3];
-        n[1] = r[0]*q[1]+r[1]*q[0]-r[2]*q[3]+r[3]*q[2];
-        n[2] = r[0]*q[2]+r[1]*q[3]+r[2]*q[0]-r[3]*q[1];
-        n[3] = r[0]*q[3]-r[1]*q[2]+r[2]*q[1]+r[3]*q[0];
+    public static float[] quatmultiply(float[] q, float[] r) {
+        float[] n = new float[4];
+        n[0] = r[0] * q[0] - r[1] * q[1] - r[2] * q[2] - r[3] * q[3];
+        n[1] = r[0] * q[1] + r[1] * q[0] - r[2] * q[3] + r[3] * q[2];
+        n[2] = r[0] * q[2] + r[1] * q[3] + r[2] * q[0] - r[3] * q[1];
+        n[3] = r[0] * q[3] - r[1] * q[2] + r[2] * q[1] + r[3] * q[0];
 
         return n;
     }
