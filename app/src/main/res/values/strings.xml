@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">Straggle</string>
-
     <string name="location_check_dialog_title">Location Settings</string>
     <string name="location_check_dialog_message">For accurate location, please enter settings and enable location with high accuracy or device only.</string>
     <string name="location_check_dialog_positive_button">Enter</string>
@@ -17,6 +16,7 @@
     <string name="send_to_multiple">Share pictures to...</string>
 
     <string name="no_access_camera">Unable to access camera!</string>
+    <string name="first_marker_title">Click me for Augmented Reality!</string>
 
     <string name="menu_add_photo_title">Add a new photo</string>
     <string name="menu_add_photos_title">Add new photos</string>

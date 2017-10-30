@@ -67,6 +67,11 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
     public static final int PORTRAIT_VIEW_TYPE = 1;
     public static final String LOG_TAG = "ImageCursorAdapter";
 
+    public interface OnClickCallBack{
+        void onClick(int position);
+    }
+
+    private OnClickCallBack mCallBack;
 
     private MultiSelector mMultiSelector = new MultiSelector();
     private ModalMultiSelectorCallback mActionModeCallback
@@ -473,6 +478,11 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
         return false;
     }
 
+    public void setOnClickCallBackListener(OnClickCallBack cb)
+    {
+        mCallBack = cb;
+    }
+
 
     public class ViewHolder extends SwappingHolder implements View.OnLongClickListener, View.OnClickListener {
 
@@ -545,6 +555,10 @@ public class ImageCursorRecyclerViewAdapter extends CursorRecyclerViewAdapter<Im
             else {
                 Log.d(LOG_TAG, "onClick, normal mode");
 
+                if (mCallBack != null)
+                {
+                    mCallBack.onClick(getAdapterPosition());
+                }
             }
 
         }

@@ -123,6 +123,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String KEY_IMAGE_FILENAME = "key_image_filename";
     private static final String KEY_PANEL_STATE = "key_panel_state";
     private static final String KEY_ADD_MARKER = "key_add_marker";
+    private static final String KEY_IS_FIRST_LAUNCH = "key_mIsFirstLaunch";
     public static final String EXTRA_IMAGE_LOCATION = "extra_image_location";
     public static final String EXTRA_IMAGE_FILENAME = "extra_image_filename";
 
@@ -186,6 +187,8 @@ public class MainActivity extends AppCompatActivity implements
     private boolean mIsStoragePermissionGranted = false;
     private boolean mDoneRequestingAllPermissions = false;
 
+    private boolean mIsPauseDataUpdate = false;
+    private boolean mIsFirstLaunch = true;
 
     private ActionMode mAddMenuActionMode;
     private CameraPosition mCurrentCameraPosition;
@@ -307,6 +310,26 @@ public class MainActivity extends AppCompatActivity implements
         mRecyclerView = (RecyclerView) findViewById(R.id.images_recyclerview);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext(), LinearLayoutManager.HORIZONTAL, false));
 
+        mRecyclerViewAdapter.setOnClickCallBackListener(new ImageCursorRecyclerViewAdapter.OnClickCallBack() {
+            @Override
+            public void onClick(int position) {
+
+                Cursor data = mRecyclerViewAdapter.getCursor();
+
+                data.moveToPosition(position);
+
+                double lat = data.getDouble(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LAT));
+                double lon = data.getDouble(data.getColumnIndex(ContentProviderDbSchema.ImageTextures.COL_LON));
+
+
+                CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(new LatLng(lat, lon));
+                mGoogleMap.animateCamera(cameraUpdate);
+
+                mIsPauseDataUpdate = true;
+            }
+        });
+
+
         mRecyclerView.setAdapter(mRecyclerViewAdapter);
         mLinearSnapHelper = new LinearSnapHelper();
 
@@ -353,6 +376,7 @@ public class MainActivity extends AppCompatActivity implements
             mRecyclerViewAdapter.onRestoreInstanceState(savedInstanceState);
 
             mCurrentLocation = savedInstanceState.getParcelable(KEY_LOCATION);
+            mIsFirstLaunch = savedInstanceState.getBoolean(KEY_IS_FIRST_LAUNCH);
 
             mRestoreCurrentFilename = savedInstanceState.getString(KEY_IMAGE_FILENAME);
 
@@ -1173,6 +1197,7 @@ public class MainActivity extends AppCompatActivity implements
         if (mGoogleMap != null) {
             outState.putParcelable(KEY_CAMERA_POSITION, mGoogleMap.getCameraPosition());
             outState.putParcelable(KEY_LOCATION, mCurrentLocation);
+            outState.putBoolean(KEY_IS_FIRST_LAUNCH, mIsFirstLaunch);
 
             if (mRecyclerViewAdapter.getCursor() != null && mRecyclerViewAdapter.getCursor().getCount() > 0) {
                 int position = ((LinearLayoutManager) mRecyclerView.getLayoutManager()).findLastCompletelyVisibleItemPosition();
@@ -1181,6 +1206,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 outState.putString(KEY_IMAGE_FILENAME, filename);
             }
+
 
 
             if (mAddNewPhotoMarker != null) {
@@ -1333,6 +1359,14 @@ public class MainActivity extends AppCompatActivity implements
                 if (locationAvailability.isLocationAvailable()) {
                     Log.d(LOG_TAG, "LocationCallback, onLocationAvailability: location enabled!");
                     mCurrentLocationMarker.setVisible(true);
+
+                    if (mIsFirstLaunch)
+                    {
+                        mCurrentLocationMarker.setTitle(getString(R.string.first_marker_title) );
+                        mCurrentLocationMarker.showInfoWindow();
+                        mIsFirstLaunch = false;
+                    }
+
 
                 } else {
                     Log.d(LOG_TAG, "LocationCallback, onLocationAvailability: location disabled!");
@@ -1538,7 +1572,7 @@ public class MainActivity extends AppCompatActivity implements
 
         if (loader.getId() == IMAGESEARCH_LOADER && mIsStoragePermissionGranted) {
             if (data.getCount() == 0) {
-                mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.COLLAPSED);
+                mSlidingUpLayout.setPanelState(SlidingUpPanelLayout.PanelState.HIDDEN);
             }
 
 
@@ -1576,6 +1610,9 @@ public class MainActivity extends AppCompatActivity implements
             }
 
             data.moveToPosition(-1);
+
+
+
 
             while (data.moveToNext()) {
                 //Log.d(LOG_TAG, "")
@@ -1730,12 +1767,12 @@ public class MainActivity extends AppCompatActivity implements
         mCameraRadius = cameraRadius;
 
 
-        if (mIsStoragePermissionGranted) {
+        if (mIsStoragePermissionGranted && !mIsPauseDataUpdate) {
             Log.d(LOG_TAG, "onCameraIdle, mCameraRadius : " + mCameraRadius);
             getSupportLoaderManager().restartLoader(IMAGESEARCH_LOADER, null, MainActivity.this);
 
         }
-
+        mIsPauseDataUpdate = false;
 
         //mClusterManager.cluster();
     }
@@ -1750,6 +1787,8 @@ public class MainActivity extends AppCompatActivity implements
                 && !mRecyclerViewAdapter.isContextActionMenu()) {
             Log.d(LOG_TAG, "CurrentLocationMarker x = " + mTapMotionEvent.getX() + ", y = " + mTapMotionEvent.getY());
 
+            mCurrentLocationMarker.setTitle(null);
+            mCurrentLocationMarker.hideInfoWindow();
 
             float finalRadius = (float) Math.hypot(mTapMotionEvent.getX(), mTapMotionEvent.getY());
 

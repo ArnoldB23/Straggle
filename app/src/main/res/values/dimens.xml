@@ -7,7 +7,6 @@
     <dimen name="app_bar_elevation">4dp</dimen>
     <dimen name="app_bar_height">56dp</dimen>
 
-
     <dimen name="custom_profile_image">50dp</dimen>
     <dimen name="custom_profile_padding">2dp</dimen>
 
